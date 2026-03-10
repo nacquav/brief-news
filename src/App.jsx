@@ -1,18 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const placeholder = [
-  { id:1, category:"TECHNOLOGY", color:"#00E5C3", headline:"AI systems now process more data in a day than all of pre-2003 history", summary:"New benchmarks show exponential growth in compute, raising excitement and energy concerns.", source:"MIT Technology Review", time:"14 min ago" },
-  { id:2, category:"ECONOMY",    color:"#FFB800", headline:"Fed signals two rate cuts possible as inflation cools for fifth consecutive month", summary:"Core PCE came in at 2.1% — closest the Fed has been to its target since 2021. Markets rallied.", source:"Wall Street Journal", time:"41 min ago" },
-  { id:3, category:"INFRASTRUCTURE", color:"#FF6B35", headline:"USDOT awards $2.1B in new ITS grants — smart highway corridors to span 14 states", summary:"Funding prioritizes V2X communication, AI-driven traffic management, and connected freight corridors.", source:"Transport Topics", time:"1 hr ago" },
-  { id:4, category:"SCIENCE",    color:"#10B981", headline:"CRISPR trial shows 94% reduction in LDL cholesterol after single treatment", summary:"Intellia Therapeutics results suggest a one-time gene edit could permanently replace statins.", source:"Nature Medicine", time:"3 hr ago" },
+const TABS = [
+  { label: "For You",       category: "general" },
+  { label: "Tech",          category: "technology" },
+  { label: "Markets",       category: "business" },
+  { label: "Science",       category: "science" },
 ];
 
-const tabs = ["For You","Tech","Markets","Infrastructure","Science"];
+const CATEGORY_COLORS = {
+  general:    "#00E5C3",
+  technology: "#00E5C3",
+  business:   "#FFB800",
+  science:    "#10B981",
+};
+
+function timeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
+  if (diff < 60) return `${diff} min ago`;
+  if (diff < 1440) return `${Math.floor(diff / 60)} hr ago`;
+  return `${Math.floor(diff / 1440)} days ago`;
+}
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState(TABS[0]);
+  const [articles, setArticles] = useState([]);
   const [current, setCurrent] = useState(0);
-  const [activeTab, setActiveTab] = useState("For You");
-  const item = placeholder[current];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    setCurrent(0);
+    const key = import.meta.env.VITE_NEWS_KEY;
+    fetch(`https://newsapi.org/v2/top-headlines?country=us&category=${activeTab.category}&pageSize=10&apiKey=${key}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== "ok") throw new Error(data.message);
+        setArticles(data.articles.filter(a => a.title && a.title !== "[Removed]"));
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [activeTab]);
+
+  const item = articles[current];
+  const color = CATEGORY_COLORS[activeTab.category];
 
   return (
     <div style={{ background:"#0A0C10", minHeight:"100vh", display:"flex", justifyContent:"center", alignItems:"center", fontFamily:"sans-serif" }}>
@@ -25,41 +60,77 @@ export default function App() {
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"white", letterSpacing:4 }}>
             BRIEF<span style={{ color:"#00E5C3" }}>.</span>
           </div>
-          <div style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:"rgba(255,255,255,0.3)" }}>9:41</div>
+          <div style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:"rgba(255,255,255,0.3)" }}>
+            {new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })}
+          </div>
         </div>
 
         {/* Tabs */}
         <div style={{ display:"flex", padding:"8px 12px 0", borderBottom:"1px solid rgba(255,255,255,0.06)", overflowX:"auto" }}>
-          {tabs.map(t => (
-            <button key={t} onClick={() => setActiveTab(t)} style={{ background:"none", border:"none", color: activeTab===t ? "#00E5C3" : "rgba(255,255,255,0.3)", fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:1, padding:"6px 10px 10px", borderBottom: activeTab===t ? "2px solid #00E5C3" : "2px solid transparent", cursor:"pointer", whiteSpace:"nowrap" }}>{t}</button>
+          {TABS.map(t => (
+            <button key={t.label} onClick={() => setActiveTab(t)} style={{ background:"none", border:"none", color: activeTab.label===t.label ? "#00E5C3" : "rgba(255,255,255,0.3)", fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:1, padding:"6px 10px 10px", borderBottom: activeTab.label===t.label ? "2px solid #00E5C3" : "2px solid transparent", cursor:"pointer", whiteSpace:"nowrap" }}>
+              {t.label}
+            </button>
           ))}
         </div>
 
-        {/* Card */}
+        {/* Content */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"flex-end", padding:16 }}>
-          <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:20, padding:20, position:"relative" }}>
-            <div style={{ height:2, background:`linear-gradient(90deg, ${item.color}, transparent)`, borderRadius:1, marginBottom:16 }}/>
-            <div style={{ fontFamily:"'DM Mono',monospace", fontSize:10, color:item.color, letterSpacing:2, marginBottom:12, display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ width:5, height:5, borderRadius:"50%", background:item.color, display:"inline-block" }}/>
-              {item.category}
-            </div>
-            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:"#F9FAFB", lineHeight:1.3, marginBottom:12 }}>{item.headline}</div>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"rgba(255,255,255,0.5)", lineHeight:1.6, marginBottom:16 }}>{item.summary}</div>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:12, marginBottom:16 }}>
-              <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>{item.source}</span>
-              <span style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:"rgba(255,255,255,0.3)" }}>{item.time}</span>
-            </div>
-            <button style={{ width:"100%", background:`linear-gradient(135deg, ${item.color}22, ${item.color}11)`, border:`1px solid ${item.color}44`, borderRadius:10, padding:"10px", color:item.color, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, cursor:"pointer" }}>
-              Read Full Story →
-            </button>
-          </div>
 
-          {/* Nav dots */}
-          <div style={{ display:"flex", justifyContent:"center", gap:6, marginTop:16 }}>
-            {placeholder.map((_,i) => (
-              <div key={i} onClick={() => setCurrent(i)} style={{ width: i===current ? 20 : 6, height:6, borderRadius:3, background: i===current ? "#00E5C3" : "rgba(255,255,255,0.15)", cursor:"pointer", transition:"all 0.3s" }}/>
-            ))}
-          </div>
+          {loading && (
+            <div style={{ textAlign:"center", color:"rgba(255,255,255,0.3)", fontFamily:"'DM Mono',monospace", fontSize:12, marginBottom:40 }}>
+              Loading...
+            </div>
+          )}
+
+          {error && (
+            <div style={{ textAlign:"center", color:"#FF6B6B", fontFamily:"'DM Mono',monospace", fontSize:11, marginBottom:40, padding:"0 20px" }}>
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && item && (
+            <>
+              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:20, padding:20, position:"relative" }}>
+                <div style={{ height:2, background:`linear-gradient(90deg, ${color}, transparent)`, borderRadius:1, marginBottom:16 }}/>
+
+                <div style={{ fontFamily:"'DM Mono',monospace", fontSize:10, color:color, letterSpacing:2, marginBottom:12, display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ width:5, height:5, borderRadius:"50%", background:color, display:"inline-block" }}/>
+                  {activeTab.label.toUpperCase()}
+                </div>
+
+                <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:19, color:"#F9FAFB", lineHeight:1.35, marginBottom:12 }}>
+                  {item.title}
+                </div>
+
+                {item.description && (
+                  <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"rgba(255,255,255,0.5)", lineHeight:1.6, marginBottom:16 }}>
+                    {item.description.length > 120 ? item.description.slice(0, 120) + "..." : item.description}
+                  </div>
+                )}
+
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:12, marginBottom:16 }}>
+                  <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
+                    {item.source?.name || "Unknown"}
+                  </span>
+                  <span style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:"rgba(255,255,255,0.3)" }}>
+                    {timeAgo(item.publishedAt)}
+                  </span>
+                </div>
+
+                <a href={item.url} target="_blank" rel="noreferrer" style={{ display:"block", width:"100%", background:`linear-gradient(135deg, ${color}22, ${color}11)`, border:`1px solid ${color}44`, borderRadius:10, padding:"10px", color:color, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, cursor:"pointer", textAlign:"center", textDecoration:"none" }}>
+                  Read Full Story →
+                </a>
+              </div>
+
+              {/* Dots */}
+              <div style={{ display:"flex", justifyContent:"center", gap:6, marginTop:16 }}>
+                {articles.map((_,i) => (
+                  <div key={i} onClick={() => setCurrent(i)} style={{ width: i===current ? 20 : 6, height:6, borderRadius:3, background: i===current ? "#00E5C3" : "rgba(255,255,255,0.15)", cursor:"pointer", transition:"all 0.3s" }}/>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Bottom nav */}
