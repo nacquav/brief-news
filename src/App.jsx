@@ -24,17 +24,13 @@ const CATEGORY_LABELS = {
   health:     "HEALTH",
 };
 
-const BIAS_OPTIONS = [
-  { label: "Left",         color: "#3B82F6" },
-  { label: "Center-Left",  color: "#60A5FA" },
-  { label: "Center",       color: "#9CA3AF" },
-  { label: "Center-Right", color: "#F97316" },
-  { label: "Right",        color: "#EF4444" },
+const LEAN_BARS = [
+  { key: "Left",         color: "#3B82F6" },
+  { key: "Center-Left",  color: "#60A5FA" },
+  { key: "Center",       color: "#9CA3AF" },
+  { key: "Center-Right", color: "#F97316" },
+  { key: "Right",        color: "#EF4444" },
 ];
-
-function getBias() {
-  return BIAS_OPTIONS[Math.floor(Math.random() * BIAS_OPTIONS.length)];
-}
 
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
@@ -53,7 +49,6 @@ async function fetchSummary(title, description, content) {
   return data.summary || null;
 }
 
-
 async function fetchCorroboration(title) {
   const params = new URLSearchParams();
   params.append("title", title);
@@ -62,14 +57,10 @@ async function fetchCorroboration(title) {
   return data.score || null;
 }
 
-
-
 function NewsCard({ item, color, label }) {
-  const bias = useRef(getBias()).current;
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  
   const [corroboration, setCorroboration] = useState(null);
   const [corrobLoading, setCorrobLoading] = useState(true);
 
@@ -78,7 +69,7 @@ function NewsCard({ item, color, label }) {
       setCorroboration(score);
       setCorrobLoading(false);
     });
-  }, [item.title]);  
+  }, [item.title]);
 
   const handleSummary = async () => {
     if (summary) { setShowSummary(s => !s); return; }
@@ -92,10 +83,6 @@ function NewsCard({ item, color, label }) {
     }
     setSummaryLoading(false);
   };
-
-
-
-
 
   return (
     <div style={{
@@ -135,7 +122,7 @@ function NewsCard({ item, color, label }) {
         overflow: "hidden",
       }}>
 
-        {/* Category + Bias row */}
+        {/* Category + Corroboration row */}
         <div style={{
           display: "flex",
           justifyContent: "space-between",
@@ -154,40 +141,46 @@ function NewsCard({ item, color, label }) {
             }}>{label}</span>
           </div>
 
-          {/* Bias spectrum */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", position: "relative", width: 140 }}>
-              <div style={{
-                position: "absolute",
-                top: "50%", left: 0, right: 0,
-                height: 1, background: "rgba(0,0,0,0.12)",
-                transform: "translateY(-50%)", zIndex: 0,
-              }}/>
-              <div style={{ display: "flex", justifyContent: "space-between", width: "100%", position: "relative", zIndex: 1 }}>
-                {BIAS_OPTIONS.map((b, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <div style={{
-                      width: b.label === bias.label ? 8 : 5,
-                      height: b.label === bias.label ? 8 : 5,
-                      borderRadius: "50%",
-                      background: b.label === bias.label ? b.color : "rgba(0,0,0,0.15)",
-                      boxShadow: b.label === bias.label ? `0 0 5px ${b.color}` : "none",
-                      transition: "all 0.2s",
-                    }}/>
-                    <span style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 6, letterSpacing: 0.3,
-                      color: b.label === bias.label ? b.color : "rgba(0,0,0,0.25)",
-                      fontWeight: b.label === bias.label ? 600 : 400,
-                      whiteSpace: "nowrap",
+          {/* Compact corroboration bars */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+            {corrobLoading ? (
+              <span style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 8, color: "#D1D5DB", letterSpacing: 1,
+              }}>CHECKING...</span>
+            ) : corroboration ? (
+              <>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 20 }}>
+                  {LEAN_BARS.map(({ key, color: barColor }) => (
+                    <div key={key} style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      height: "100%",
                     }}>
-                      {b.label === "Center-Left" ? "C-Left" :
-                       b.label === "Center-Right" ? "C-Right" : b.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                      <div style={{
+                        width: 8,
+                        height: corroboration.counts[key] > 0
+                          ? Math.min(Math.max(corroboration.counts[key] * 4, 3), 16)
+                          : 2,
+                        background: corroboration.counts[key] > 0 ? barColor : "rgba(0,0,0,0.08)",
+                        borderRadius: 2,
+                      }}/>
+                    </div>
+                  ))}
+                </div>
+                <span style={{
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: 7, color: "#9CA3AF", letterSpacing: 0.5,
+                }}>{corroboration.total} SOURCES</span>
+              </>
+            ) : (
+              <span style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 8, color: "#D1D5DB",
+              }}>NO DATA</span>
+            )}
           </div>
         </div>
 
@@ -209,12 +202,8 @@ function NewsCard({ item, color, label }) {
           marginBottom: 10, flexShrink: 0,
         }}/>
 
-        {/* Summary panel — AI or description */}
-        <div style={{
-          flex: 1,
-          overflow: "hidden",
-          marginBottom: 12,
-        }}>
+        {/* Summary panel */}
+        <div style={{ flex: 1, overflow: "hidden", marginBottom: 12 }}>
           {showSummary ? (
             <div style={{
               background: "rgba(0,196,168,0.06)",
@@ -227,16 +216,12 @@ function NewsCard({ item, color, label }) {
             }}>
               {summaryLoading ? (
                 <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  height: "100%",
-                  justifyContent: "center",
+                  display: "flex", alignItems: "center",
+                  gap: 8, justifyContent: "center",
                 }}>
                   <div style={{
                     width: 6, height: 6, borderRadius: "50%",
                     background: "#00C4A8",
-                    animation: "pulse 1s infinite",
                   }}/>
                   <span style={{
                     fontFamily: "'DM Mono', monospace",
@@ -246,14 +231,8 @@ function NewsCard({ item, color, label }) {
               ) : (
                 <p style={{
                   fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13,
-                  color: "#374151",
-                  lineHeight: 1.65,
-                  margin: 0,
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 6,
-                  WebkitBoxOrient: "vertical",
+                  fontSize: 13, color: "#374151",
+                  lineHeight: 1.65, margin: 0,
                 }}>{summary}</p>
               )}
             </div>
@@ -261,10 +240,8 @@ function NewsCard({ item, color, label }) {
             item.description && (
               <p style={{
                 fontFamily: "'DM Sans', sans-serif",
-                fontSize: 13,
-                color: "#6B7280",
-                lineHeight: 1.6,
-                margin: 0,
+                fontSize: 13, color: "#6B7280",
+                lineHeight: 1.6, margin: 0,
                 overflow: "hidden",
                 display: "-webkit-box",
                 WebkitLineClamp: item.urlToImage ? 2 : 4,
@@ -273,79 +250,6 @@ function NewsCard({ item, color, label }) {
             )
           )}
         </div>
-
-
-        {/* Corroboration Score */}
-        <div style={{
-                  marginBottom: 10,
-                  padding: "8px 12px",
-                  background: "rgba(0,0,0,0.03)",
-                  border: "1px solid rgba(0,0,0,0.07)",
-                  borderRadius: 10,
-                  flexShrink: 0,
-                }}>
-                  {corrobLoading ? (
-                    <div style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 9, color: "#9CA3AF", letterSpacing: 1,
-                    }}>CHECKING SOURCES...</div>
-                  ) : corroboration ? (
-                    <div>
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 6,
-                      }}>
-                        <span style={{
-                          fontFamily: "'DM Mono', monospace",
-                          fontSize: 9, letterSpacing: 1,
-                          color: "#6B7280", textTransform: "uppercase",
-                        }}>Covered by {corroboration.total} sources</span>
-                        <span style={{
-                          fontFamily: "'DM Mono', monospace",
-                          fontSize: 9, color: "#00C4A8",
-                        }}>CORROBORATED</span>
-                      </div>
-                      <div style={{ display: "flex", gap: 3 }}>
-                        {[
-                          { key: "Left",         color: "#3B82F6", short: "L" },
-                          { key: "Center-Left",  color: "#60A5FA", short: "CL" },
-                          { key: "Center",       color: "#9CA3AF", short: "C" },
-                          { key: "Center-Right", color: "#F97316", short: "CR" },
-                          { key: "Right",        color: "#EF4444", short: "R" },
-                        ].map(({ key, color, short }) => (
-                          <div key={key} style={{
-                            flex: 1,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: 3,
-                          }}>
-                            <div style={{
-                              width: "100%",
-                              height: corroboration.counts[key] > 0 ? Math.max(corroboration.counts[key] * 6, 4) : 2,
-                              background: corroboration.counts[key] > 0 ? color : "rgba(0,0,0,0.08)",
-                              borderRadius: 2,
-                              transition: "height 0.3s",
-                            }}/>
-                            <span style={{
-                              fontFamily: "'DM Mono', monospace",
-                              fontSize: 7, color: corroboration.counts[key] > 0 ? color : "#D1D5DB",
-                            }}>{short} {corroboration.counts[key]}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 9, color: "#D1D5DB", letterSpacing: 1,
-                    }}>NO CORROBORATION DATA</div>
-                  )}
-                </div>
-
-
 
         {/* Source + time */}
         <div style={{
@@ -372,37 +276,29 @@ function NewsCard({ item, color, label }) {
           <button
             onClick={handleSummary}
             style={{
-              flex: 1,
-              padding: "11px",
+              flex: 1, padding: "11px",
               background: showSummary ? "rgba(0,196,168,0.1)" : "rgba(0,0,0,0.04)",
               border: showSummary ? "1px solid rgba(0,196,168,0.3)" : "1px solid rgba(0,0,0,0.08)",
               borderRadius: 12,
               fontFamily: "'DM Mono', monospace",
               fontSize: 10, letterSpacing: 1,
               color: showSummary ? "#00C4A8" : "#6B7280",
-              cursor: "pointer",
-              transition: "all 0.2s",
+              cursor: "pointer", transition: "all 0.2s",
             }}
           >
-            {showSummary ? "← ORIGINAL" : "⚡ 35s BRIEF"}
+            {showSummary ? "← ORIGINAL" : "⚡ 60s BRIEF"}
           </button>
 
-          
-            <a href={item.url}
+          <a
+            href={item.url}
             target="_blank"
             rel="noreferrer"
             style={{
-              flex: 2,
-              display: "block",
-              textAlign: "center",
-              padding: "11px",
-              background: "#0A0C10",
-              color: "#F5F2ED",
-              borderRadius: 12,
-              fontFamily: "'DM Sans', sans-serif",
+              flex: 2, display: "block", textAlign: "center",
+              padding: "11px", background: "#0A0C10", color: "#F5F2ED",
+              borderRadius: 12, fontFamily: "'DM Sans', sans-serif",
               fontSize: 13, fontWeight: 600,
-              textDecoration: "none",
-              letterSpacing: "0.3px",
+              textDecoration: "none", letterSpacing: "0.3px",
             }}
           >
             Read Full Story →
@@ -413,7 +309,6 @@ function NewsCard({ item, color, label }) {
     </div>
   );
 }
-
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(TABS[0]);
@@ -464,9 +359,7 @@ export default function App() {
     if (touchStart.current === null || touchLocked.current) return;
     const diff = touchStart.current - e.changedTouches[0].clientY;
     touchStart.current = null;
-    if (Math.abs(diff) > 50) {
-      navigate(diff > 0 ? 1 : -1);
-    }
+    if (Math.abs(diff) > 50) navigate(diff > 0 ? 1 : -1);
   };
 
   const color = CATEGORY_COLORS[activeTab.category];
@@ -542,10 +435,8 @@ export default function App() {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           style={{
-            flex: 1,
-            overflow: "hidden",
-            position: "relative",
-            background: "#F5F2ED",
+            flex: 1, overflow: "hidden",
+            position: "relative", background: "#F5F2ED",
           }}
         >
           {loading && (
@@ -567,10 +458,7 @@ export default function App() {
           )}
 
           {!loading && !error && articles.length > 0 && (
-            <div style={{
-              position: "absolute",
-              top: 0, left: 0, right: 0, bottom: 0,
-            }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
               {articles.map((item, i) => (
                 <div
                   key={i}
