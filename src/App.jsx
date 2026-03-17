@@ -174,17 +174,23 @@ export default function App() {
 
 
   // Touch swipe
-  const touchStart = useRef(null);
-  const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientY; };
-  const handleTouchEnd = (e) => {
-    if (touchStart.current === null) return;
-    const diff = touchStart.current - e.changedTouches[0].clientY;
-    if (Math.abs(diff) > 40) {
-      if (diff > 0) setCurrent(c => Math.min(c + 1, articles.length - 1));
-      else setCurrent(c => Math.max(c - 1, 0));
-    }
-    touchStart.current = null;
-  };
+const touchStart = useRef(null);
+const touchLocked = useRef(false);
+const handleTouchStart = (e) => {
+  if (touchLocked.current) return;
+  touchStart.current = e.touches[0].clientY;
+};
+const handleTouchEnd = (e) => {
+  if (touchStart.current === null || touchLocked.current) return;
+  const diff = touchStart.current - e.changedTouches[0].clientY;
+  if (Math.abs(diff) > 40) {
+    touchLocked.current = true;
+    if (diff > 0) setCurrent(c => Math.min(c + 1, articles.length - 1));
+    else setCurrent(c => Math.max(c - 1, 0));
+    setTimeout(() => { touchLocked.current = false; }, 600);
+  }
+  touchStart.current = null;
+};
 
   const color = CATEGORY_COLORS[activeTab.category];
 
