@@ -187,7 +187,7 @@ function NewsCard({ item, color, label }) {
         </div>
 
         {/* Read button */}
-        
+        <a
           href={item.url}
           target="_blank"
           rel="noreferrer"
