@@ -54,11 +54,31 @@ async function fetchSummary(title, description, content) {
 }
 
 
+async function fetchCorroboration(title) {
+  const params = new URLSearchParams();
+  params.append("title", title);
+  const res = await fetch(`/api/corroborate?${params.toString()}`);
+  const data = await res.json();
+  return data.score || null;
+}
+
+
+
 function NewsCard({ item, color, label }) {
   const bias = useRef(getBias()).current;
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  
+  const [corroboration, setCorroboration] = useState(null);
+  const [corrobLoading, setCorrobLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCorroboration(item.title).then(score => {
+      setCorroboration(score);
+      setCorrobLoading(false);
+    });
+  }, [item.title]);  
 
   const handleSummary = async () => {
     if (summary) { setShowSummary(s => !s); return; }
@@ -72,6 +92,10 @@ function NewsCard({ item, color, label }) {
     }
     setSummaryLoading(false);
   };
+
+
+
+
 
   return (
     <div style={{
@@ -249,6 +273,79 @@ function NewsCard({ item, color, label }) {
             )
           )}
         </div>
+
+
+        {/* Corroboration Score */}
+        <div style={{
+                  marginBottom: 10,
+                  padding: "8px 12px",
+                  background: "rgba(0,0,0,0.03)",
+                  border: "1px solid rgba(0,0,0,0.07)",
+                  borderRadius: 10,
+                  flexShrink: 0,
+                }}>
+                  {corrobLoading ? (
+                    <div style={{
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: 9, color: "#9CA3AF", letterSpacing: 1,
+                    }}>CHECKING SOURCES...</div>
+                  ) : corroboration ? (
+                    <div>
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 6,
+                      }}>
+                        <span style={{
+                          fontFamily: "'DM Mono', monospace",
+                          fontSize: 9, letterSpacing: 1,
+                          color: "#6B7280", textTransform: "uppercase",
+                        }}>Covered by {corroboration.total} sources</span>
+                        <span style={{
+                          fontFamily: "'DM Mono', monospace",
+                          fontSize: 9, color: "#00C4A8",
+                        }}>CORROBORATED</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 3 }}>
+                        {[
+                          { key: "Left",         color: "#3B82F6", short: "L" },
+                          { key: "Center-Left",  color: "#60A5FA", short: "CL" },
+                          { key: "Center",       color: "#9CA3AF", short: "C" },
+                          { key: "Center-Right", color: "#F97316", short: "CR" },
+                          { key: "Right",        color: "#EF4444", short: "R" },
+                        ].map(({ key, color, short }) => (
+                          <div key={key} style={{
+                            flex: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 3,
+                          }}>
+                            <div style={{
+                              width: "100%",
+                              height: corroboration.counts[key] > 0 ? Math.max(corroboration.counts[key] * 6, 4) : 2,
+                              background: corroboration.counts[key] > 0 ? color : "rgba(0,0,0,0.08)",
+                              borderRadius: 2,
+                              transition: "height 0.3s",
+                            }}/>
+                            <span style={{
+                              fontFamily: "'DM Mono', monospace",
+                              fontSize: 7, color: corroboration.counts[key] > 0 ? color : "#D1D5DB",
+                            }}>{short} {corroboration.counts[key]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: 9, color: "#D1D5DB", letterSpacing: 1,
+                    }}>NO CORROBORATION DATA</div>
+                  )}
+                </div>
+
+
 
         {/* Source + time */}
         <div style={{
