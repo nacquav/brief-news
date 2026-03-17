@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 
 const TABS = [
   { label: "For You",   category: "general" },
@@ -237,17 +238,40 @@ function NewsCard({ item, color, label }) {
               )}
             </div>
           ) : (
-            item.description && (
-              <p style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 13, color: "#6B7280",
-                lineHeight: 1.6, margin: 0,
-                overflow: "hidden",
-                display: "-webkit-box",
-                WebkitLineClamp: item.urlToImage ? 2 : 4,
-                WebkitBoxOrient: "vertical",
-              }}>{item.description}</p>
-            )
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => (
+                  <p style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13, color: "#374151",
+                    lineHeight: 1.65, margin: "0 0 8px 0",
+                  }}>{children}</p>
+                ),
+                strong: ({ children }) => (
+                  <strong style={{ color: "#0A0C10", fontWeight: 600 }}>{children}</strong>
+                ),
+                ul: ({ children }) => (
+                  <ul style={{ paddingLeft: 16, margin: "6px 0" }}>{children}</ul>
+                ),
+                li: ({ children }) => (
+                  <li style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13, color: "#374151",
+                    lineHeight: 1.6, marginBottom: 4,
+                  }}>{children}</li>
+                ),
+                h3: ({ children }) => (
+                  <div style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: 9, letterSpacing: 1.5,
+                    color: "#00C4A8", textTransform: "uppercase",
+                    marginBottom: 6, marginTop: 8,
+                  }}>{children}</div>
+                ),
+              }}
+            >
+              {summary}
+            </ReactMarkdown>
           )}
         </div>
 

@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "user",
-          content: `You are a news summarizer. Write a single paragraph summary of this news story that takes approximately 60 seconds to read aloud. Be direct and conversational. End with why it matters. Do not leave on an open ended sentence. Do not hallucinate outside of the contents of the article. Use clear spacing and separation, as well as structured text to keep the summary as readable as possible.
+          content: `You are a news summarizer for BRIEF., a fast news app. Summarize this article in a 60-second read using clean markdown formatting. Be direct and conversational. End with why it matters. Do not leave on an open ended sentence. Do not hallucinate outside of the contents of the article. Use clear spacing and separation, as well as structured text to keep the summary as readable as possible.
 
 Article: ${articleText}
 
