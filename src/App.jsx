@@ -108,24 +108,37 @@ function NewsCard({ item, color, label }) {
             }}>{label}</span>
           </div>
 
-          {/* Bias pill */}
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            background: "rgba(0,0,0,0.04)",
-            border: "1px solid rgba(0,0,0,0.08)",
-            borderRadius: 20,
-            padding: "3px 8px",
-          }}>
-            <div style={{
-              width: 5, height: 5, borderRadius: "50%",
-              background: bias.color,
-            }}/>
+          {/* Bias spectrum */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, position: "relative" }}>
+              {/* Line */}
+              <div style={{
+                position: "absolute",
+                top: "50%", left: 0, right: 0,
+                height: 1.5,
+                background: "rgba(0,0,0,0.1)",
+                transform: "translateY(-50%)",
+                zIndex: 0,
+              }}/>
+              {/* 5 dots */}
+              {BIAS_OPTIONS.map((b, i) => (
+                <div key={i} style={{
+                  width: b.label === bias.label ? 10 : 6,
+                  height: b.label === bias.label ? 10 : 6,
+                  borderRadius: "50%",
+                  background: b.label === bias.label ? b.color : "rgba(0,0,0,0.12)",
+                  border: b.label === bias.label ? `2px solid ${b.color}` : "none",
+                  boxShadow: b.label === bias.label ? `0 0 6px ${b.color}` : "none",
+                  position: "relative", zIndex: 1,
+                  transition: "all 0.2s",
+                  flexShrink: 0,
+                }}/>
+              ))}
+            </div>
             <span style={{
               fontFamily: "'DM Mono', monospace",
-              fontSize: 8, letterSpacing: 1,
-              color: bias.color,
+              fontSize: 7, letterSpacing: 0.5,
+              color: bias.color, opacity: 0.8,
             }}>{bias.label}</span>
           </div>
         </div>
