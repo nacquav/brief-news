@@ -12,33 +12,35 @@ export default async function handler(req, res) {
     .join(" ")
     .slice(0, 2000);
 
+  if (!articleText || articleText.length < 20) {
+    return res.status(400).json({ error: "Not enough article content to summarize." });
+  }
+
   try {
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 120,
+      max_tokens: 150,
       messages: [
         {
           role: "user",
-          content: `You are a news summarizer for BRIEF, a fast news app. Your job is to write a spoken summary of a news article that takes approximately 35 seconds to read aloud — roughly 100-130 words. 
+          content: `You are a news summarizer. Write a single paragraph summary of this news story that takes 35 seconds to read aloud (about 100-130 words). Be direct and conversational. End with why it matters.
 
-Rules:
-- Start directly with the news, no preamble
-- Plain conversational language, no jargon
-- One paragraph, no bullet points
-- End with why it matters in one sentence
-- Never say "the article says" or "according to"
+Article: ${articleText}
 
-Article:
-${articleText}
-
-Write the 35-second summary now:`,
+Summary:`,
         },
       ],
     });
 
-    const summary = message.content[0].text.trim();
+    const summary = message.content[0]?.text?.trim();
+
+    if (!summary) {
+      return res.status(500).json({ error: "No summary returned from AI." });
+    }
+
     res.status(200).json({ summary });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Summary error:", err);
+    res.status(500).json({ error: err.message || "Failed to generate summary." });
   }
 }
