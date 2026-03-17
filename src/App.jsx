@@ -43,8 +43,31 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 1440)}d ago`;
 }
 
+async function fetchSummary(title, description, content) {
+  const params = new URLSearchParams();
+  if (title) params.append("title", title);
+  if (description) params.append("description", description);
+  if (content) params.append("content", content);
+  const res = await fetch(`/api/summary?${params.toString()}`);
+  const data = await res.json();
+  return data.summary || null;
+}
+
+
 function NewsCard({ item, color, label }) {
   const bias = useRef(getBias()).current;
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+
+  const handleSummary = async () => {
+    if (summary) { setShowSummary(s => !s); return; }
+    setSummaryLoading(true);
+    setShowSummary(true);
+    const result = await fetchSummary(item.title, item.description, item.content);
+    setSummary(result);
+    setSummaryLoading(false);
+  };
 
   return (
     <div style={{
@@ -61,7 +84,7 @@ function NewsCard({ item, color, label }) {
       {item.urlToImage && (
         <div style={{
           width: "100%",
-          height: "200px",
+          height: "190px",
           flexShrink: 0,
           overflow: "hidden",
           background: "#E8E4DD",
@@ -69,12 +92,7 @@ function NewsCard({ item, color, label }) {
           <img
             src={item.urlToImage}
             alt={item.title}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block",
-            }}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             onError={e => { e.target.parentElement.style.display = "none"; }}
           />
         </div>
@@ -85,7 +103,7 @@ function NewsCard({ item, color, label }) {
         flex: 1,
         display: "flex",
         flexDirection: "column",
-        padding: "20px 20px 16px",
+        padding: "16px 20px 14px",
         overflow: "hidden",
       }}>
 
@@ -94,7 +112,7 @@ function NewsCard({ item, color, label }) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 14,
+          marginBottom: 12,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{
@@ -111,16 +129,12 @@ function NewsCard({ item, color, label }) {
           {/* Bias spectrum */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
             <div style={{ display: "flex", alignItems: "center", position: "relative", width: 140 }}>
-              {/* Line */}
               <div style={{
                 position: "absolute",
                 top: "50%", left: 0, right: 0,
-                height: 1,
-                background: "rgba(0,0,0,0.12)",
-                transform: "translateY(-50%)",
-                zIndex: 0,
+                height: 1, background: "rgba(0,0,0,0.12)",
+                transform: "translateY(-50%)", zIndex: 0,
               }}/>
-              {/* 5 dots evenly spaced */}
               <div style={{ display: "flex", justifyContent: "space-between", width: "100%", position: "relative", zIndex: 1 }}>
                 {BIAS_OPTIONS.map((b, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
@@ -134,15 +148,13 @@ function NewsCard({ item, color, label }) {
                     }}/>
                     <span style={{
                       fontFamily: "'DM Mono', monospace",
-                      fontSize: 6,
-                      letterSpacing: 0.3,
+                      fontSize: 6, letterSpacing: 0.3,
                       color: b.label === bias.label ? b.color : "rgba(0,0,0,0.25)",
                       fontWeight: b.label === bias.label ? 600 : 400,
                       whiteSpace: "nowrap",
                     }}>
                       {b.label === "Center-Left" ? "C-Left" :
-                       b.label === "Center-Right" ? "C-Right" :
-                       b.label}
+                       b.label === "Center-Right" ? "C-Right" : b.label}
                     </span>
                   </div>
                 ))}
@@ -154,11 +166,11 @@ function NewsCard({ item, color, label }) {
         {/* Headline */}
         <h2 style={{
           fontFamily: "'DM Serif Display', serif",
-          fontSize: item.urlToImage ? 20 : 24,
+          fontSize: item.urlToImage ? 19 : 23,
           fontWeight: 400,
           color: "#0A0C10",
           lineHeight: 1.25,
-          margin: "0 0 10px 0",
+          margin: "0 0 8px 0",
           letterSpacing: "-0.3px",
         }}>{item.title}</h2>
 
@@ -169,37 +181,83 @@ function NewsCard({ item, color, label }) {
           marginBottom: 10, flexShrink: 0,
         }}/>
 
-        {/* Summary */}
-        {item.description && (
-          <p style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13,
-            color: "#6B7280",
-            lineHeight: 1.6,
-            margin: "0 0 16px 0",
-            overflow: "hidden",
-            display: "-webkit-box",
-            WebkitLineClamp: item.urlToImage ? 2 : 3,
-            WebkitBoxOrient: "vertical",
-          }}>{item.description}</p>
-        )}
-
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
+        {/* Summary panel — AI or description */}
+        <div style={{
+          flex: 1,
+          overflow: "hidden",
+          marginBottom: 12,
+        }}>
+          {showSummary ? (
+            <div style={{
+              background: "rgba(0,196,168,0.06)",
+              border: "1px solid rgba(0,196,168,0.2)",
+              borderRadius: 10,
+              padding: "10px 12px",
+              height: "100%",
+              overflow: "hidden",
+            }}>
+              {summaryLoading ? (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  height: "100%",
+                  justifyContent: "center",
+                }}>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: "#00C4A8",
+                    animation: "pulse 1s infinite",
+                  }}/>
+                  <span style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: 10, color: "#00C4A8", letterSpacing: 1,
+                  }}>SUMMARIZING...</span>
+                </div>
+              ) : (
+                <p style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  color: "#374151",
+                  lineHeight: 1.65,
+                  margin: 0,
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 6,
+                  WebkitBoxOrient: "vertical",
+                }}>{summary}</p>
+              )}
+            </div>
+          ) : (
+            item.description && (
+              <p style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                color: "#6B7280",
+                lineHeight: 1.6,
+                margin: 0,
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: item.urlToImage ? 2 : 4,
+                WebkitBoxOrient: "vertical",
+              }}>{item.description}</p>
+            )
+          )}
+        </div>
 
         {/* Source + time */}
         <div style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          paddingTop: 12,
-          marginBottom: 14,
+          paddingTop: 10,
+          marginBottom: 12,
           borderTop: "1px solid rgba(0,0,0,0.07)",
+          flexShrink: 0,
         }}>
           <span style={{
             fontFamily: "'DM Sans', sans-serif",
-            fontSize: 12, fontWeight: 600,
-            color: "#0A0C10",
+            fontSize: 12, fontWeight: 600, color: "#0A0C10",
           }}>{item.source?.name}</span>
           <span style={{
             fontFamily: "'DM Mono', monospace",
@@ -207,31 +265,53 @@ function NewsCard({ item, color, label }) {
           }}>{timeAgo(item.publishedAt)}</span>
         </div>
 
-        {/* Read button */}
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noreferrer"
-          style={{
-            display: "block",
-            textAlign: "center",
-            padding: "12px",
-            background: "#0A0C10",
-            color: "#F5F2ED",
-            borderRadius: 12,
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13, fontWeight: 600,
-            textDecoration: "none",
-            letterSpacing: "0.3px",
-            flexShrink: 0,
-          }}
-        >
-          Read Full Story →
-        </a>
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={handleSummary}
+            style={{
+              flex: 1,
+              padding: "11px",
+              background: showSummary ? "rgba(0,196,168,0.1)" : "rgba(0,0,0,0.04)",
+              border: showSummary ? "1px solid rgba(0,196,168,0.3)" : "1px solid rgba(0,0,0,0.08)",
+              borderRadius: 12,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 10, letterSpacing: 1,
+              color: showSummary ? "#00C4A8" : "#6B7280",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            {showSummary ? "← ORIGINAL" : "⚡ 35s BRIEF"}
+          </button>
+
+          
+            <a href={item.url}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              flex: 2,
+              display: "block",
+              textAlign: "center",
+              padding: "11px",
+              background: "#0A0C10",
+              color: "#F5F2ED",
+              borderRadius: 12,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13, fontWeight: 600,
+              textDecoration: "none",
+              letterSpacing: "0.3px",
+            }}
+          >
+            Read Full Story →
+          </a>
+        </div>
+
       </div>
     </div>
   );
 }
+
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(TABS[0]);
