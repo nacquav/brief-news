@@ -109,37 +109,45 @@ function NewsCard({ item, color, label }) {
           </div>
 
           {/* Bias spectrum */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, position: "relative" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", position: "relative", width: 140 }}>
               {/* Line */}
               <div style={{
                 position: "absolute",
                 top: "50%", left: 0, right: 0,
-                height: 1.5,
-                background: "rgba(0,0,0,0.1)",
+                height: 1,
+                background: "rgba(0,0,0,0.12)",
                 transform: "translateY(-50%)",
                 zIndex: 0,
               }}/>
-              {/* 5 dots */}
-              {BIAS_OPTIONS.map((b, i) => (
-                <div key={i} style={{
-                  width: b.label === bias.label ? 10 : 6,
-                  height: b.label === bias.label ? 10 : 6,
-                  borderRadius: "50%",
-                  background: b.label === bias.label ? b.color : "rgba(0,0,0,0.12)",
-                  border: b.label === bias.label ? `2px solid ${b.color}` : "none",
-                  boxShadow: b.label === bias.label ? `0 0 6px ${b.color}` : "none",
-                  position: "relative", zIndex: 1,
-                  transition: "all 0.2s",
-                  flexShrink: 0,
-                }}/>
-              ))}
+              {/* 5 dots evenly spaced */}
+              <div style={{ display: "flex", justifyContent: "space-between", width: "100%", position: "relative", zIndex: 1 }}>
+                {BIAS_OPTIONS.map((b, i) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <div style={{
+                      width: b.label === bias.label ? 8 : 5,
+                      height: b.label === bias.label ? 8 : 5,
+                      borderRadius: "50%",
+                      background: b.label === bias.label ? b.color : "rgba(0,0,0,0.15)",
+                      boxShadow: b.label === bias.label ? `0 0 5px ${b.color}` : "none",
+                      transition: "all 0.2s",
+                    }}/>
+                    <span style={{
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: 6,
+                      letterSpacing: 0.3,
+                      color: b.label === bias.label ? b.color : "rgba(0,0,0,0.25)",
+                      fontWeight: b.label === bias.label ? 600 : 400,
+                      whiteSpace: "nowrap",
+                    }}>
+                      {b.label === "Center-Left" ? "C-Left" :
+                       b.label === "Center-Right" ? "C-Right" :
+                       b.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <span style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 7, letterSpacing: 0.5,
-              color: bias.color, opacity: 0.8,
-            }}>{bias.label}</span>
           </div>
         </div>
 
