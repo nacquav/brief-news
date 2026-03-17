@@ -152,14 +152,12 @@ export default function App() {
   const [error, setError] = useState(null);
   const [current, setCurrent] = useState(0);
   const containerRef = useRef(null);
-  const isScrolling = useRef(false);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
     setCurrent(0);
-    const key = import.meta.env.VITE_NEWS_KEY;
-    fetch(`https://newsapi.org/v2/top-headlines?country=us&category=${activeTab.category}&pageSize=10&apiKey=${key}`)
+    fetch(`/api/news?category=${activeTab.category}`)
       .then(r => r.json())
       .then(data => {
         if (data.status !== "ok") throw new Error(data.message);
@@ -173,23 +171,7 @@ export default function App() {
   }, [activeTab]);
 
   // Snap scroll via wheel
-  const articlesRef = useRef([]);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    let locked = false;
-    const handleWheel = (e) => {
-      e.preventDefault();
-      if (locked) return;
-      if (Math.abs(e.deltaY) < 30) return;
-      locked = true;
-      if (e.deltaY > 0) setCurrent(c => Math.min(c + 1, articlesRef.current.length - 1));
-      else setCurrent(c => Math.max(c - 1, 0));
-      setTimeout(() => { locked = false; }, 900);
-    };
-    el.addEventListener("wheel", handleWheel, { passive: false });
-    return () => el.removeEventListener("wheel", handleWheel);
-  }, []);
+
 
   // Touch swipe
   const touchStart = useRef(null);
