@@ -64,8 +64,12 @@ function NewsCard({ item, color, label }) {
     if (summary) { setShowSummary(s => !s); return; }
     setSummaryLoading(true);
     setShowSummary(true);
-    const result = await fetchSummary(item.title, item.description, item.content);
-    setSummary(result);
+    try {
+      const result = await fetchSummary(item.title, item.description, item.content);
+      setSummary(result || "Unable to generate summary for this article.");
+    } catch (err) {
+      setSummary("Unable to generate summary for this article.");
+    }
     setSummaryLoading(false);
   };
 
@@ -193,8 +197,9 @@ function NewsCard({ item, color, label }) {
               border: "1px solid rgba(0,196,168,0.2)",
               borderRadius: 10,
               padding: "10px 12px",
-              height: "100%",
-              overflow: "hidden",
+              height: "auto",
+              maxHeight: 150,
+              overflow: "auto",
             }}>
               {summaryLoading ? (
                 <div style={{
