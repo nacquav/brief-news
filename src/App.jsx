@@ -438,11 +438,6 @@ function NewsCard({ item, color, label, category, onRead }) {
     fetchCorroboration(item.title).then(score => {
       setCorroboration(score);
       setCorrobLoading(false);
-      if (!hasTracked.current) {
-        hasTracked.current = true;
-        trackRead(category, score);
-        if (onRead) onRead();
-      }
     });
   }, [item.title]);
 
@@ -450,6 +445,10 @@ function NewsCard({ item, color, label, category, onRead }) {
     if (summary) { setShowSummary(s => !s); return; }
     setSummaryLoading(true);
     setShowSummary(true);
+    if (!hasTracked.current) {
+      hasTracked.current = true;
+      trackRead(category, corroboration);
+    }
     try {
       const result = await fetchSummary(item.title, item.description, item.content);
       setSummary(result || "Unable to generate summary for this article.");
@@ -546,7 +545,17 @@ function NewsCard({ item, color, label, category, onRead }) {
           <button onClick={handleSummary} style={{ flex: 1, padding: "11px", background: showSummary ? "rgba(0,196,168,0.1)" : "rgba(0,0,0,0.04)", border: showSummary ? "1px solid rgba(0,196,168,0.3)" : "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1, color: showSummary ? "#00C4A8" : "#6B7280", cursor: "pointer", transition: "all 0.2s" }}>
             {showSummary ? "← ORIGINAL" : "⚡ 60s BRIEF"}
           </button>
-          <a href={item.url} target="_blank" rel="noreferrer" style={{ flex: 2, display: "block", textAlign: "center", padding: "11px", background: "#0A0C10", color: "#F5F2ED", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, textDecoration: "none", letterSpacing: "0.3px" }}>
+          <a href={item.url}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => {
+              if (!hasTracked.current) {
+                hasTracked.current = true;
+                trackRead(category, corroboration);
+              }
+            }}
+            style={{ flex: 2, display: "block", textAlign: "center", padding: "11px", background: "#0A0C10", color: "#F5F2ED", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, textDecoration: "none", letterSpacing: "0.3px" }}
+          >
             Read Full Story →
           </a>
         </div>
