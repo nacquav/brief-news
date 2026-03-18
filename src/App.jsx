@@ -204,21 +204,18 @@ function NewsCard({ item, color, label }) {
         }}/>
 
         {/* Summary panel */}
-        <div style={{ flex: 1, overflow: "hidden", marginBottom: 12 }}>
+        <div style={{ flex: 1, overflow: "auto", marginBottom: 12 }}>
           {showSummary ? (
             <div style={{
               background: "rgba(0,196,168,0.06)",
               border: "1px solid rgba(0,196,168,0.2)",
               borderRadius: 10,
               padding: "10px 12px",
-              height: "auto",
-              maxHeight: 150,
-              overflow: "auto",
             }}>
               {summaryLoading ? (
                 <div style={{
                   display: "flex", alignItems: "center",
-                  gap: 8, justifyContent: "center",
+                  gap: 8, justifyContent: "center", padding: "16px 0",
                 }}>
                   <div style={{
                     width: 6, height: 6, borderRadius: "50%",
@@ -230,48 +227,54 @@ function NewsCard({ item, color, label }) {
                   }}>SUMMARIZING...</span>
                 </div>
               ) : (
-                <p style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13, color: "#374151",
-                  lineHeight: 1.65, margin: 0,
-                }}>{summary}</p>
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => (
+                      <p style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13, color: "#374151",
+                        lineHeight: 1.65, margin: "0 0 8px 0",
+                      }}>{children}</p>
+                    ),
+                    strong: ({ children }) => (
+                      <strong style={{ color: "#0A0C10", fontWeight: 600 }}>{children}</strong>
+                    ),
+                    ul: ({ children }) => (
+                      <ul style={{ paddingLeft: 16, margin: "6px 0" }}>{children}</ul>
+                    ),
+                    li: ({ children }) => (
+                      <li style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13, color: "#374151",
+                        lineHeight: 1.6, marginBottom: 4,
+                      }}>{children}</li>
+                    ),
+                    h3: ({ children }) => (
+                      <div style={{
+                        fontFamily: "'DM Mono', monospace",
+                        fontSize: 9, letterSpacing: 1.5,
+                        color: "#00C4A8", textTransform: "uppercase",
+                        marginBottom: 6, marginTop: 8,
+                      }}>{children}</div>
+                    ),
+                  }}
+                >
+                  {summary}
+                </ReactMarkdown>
               )}
             </div>
           ) : (
-            <ReactMarkdown
-              components={{
-                p: ({ children }) => (
-                  <p style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13, color: "#374151",
-                    lineHeight: 1.65, margin: "0 0 8px 0",
-                  }}>{children}</p>
-                ),
-                strong: ({ children }) => (
-                  <strong style={{ color: "#0A0C10", fontWeight: 600 }}>{children}</strong>
-                ),
-                ul: ({ children }) => (
-                  <ul style={{ paddingLeft: 16, margin: "6px 0" }}>{children}</ul>
-                ),
-                li: ({ children }) => (
-                  <li style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13, color: "#374151",
-                    lineHeight: 1.6, marginBottom: 4,
-                  }}>{children}</li>
-                ),
-                h3: ({ children }) => (
-                  <div style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: 9, letterSpacing: 1.5,
-                    color: "#00C4A8", textTransform: "uppercase",
-                    marginBottom: 6, marginTop: 8,
-                  }}>{children}</div>
-                ),
-              }}
-            >
-              {summary}
-            </ReactMarkdown>
+            item.description && (
+              <p style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13, color: "#6B7280",
+                lineHeight: 1.6, margin: 0,
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: item.urlToImage ? 2 : 4,
+                WebkitBoxOrient: "vertical",
+              }}>{item.description}</p>
+            )
           )}
         </div>
 
