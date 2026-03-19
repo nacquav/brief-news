@@ -196,6 +196,7 @@ function SpiderChart({ data }) {
   );
 }
 
+
 // ── LEAN BAR CHART ──
 function LeanChart({ leanData }) {
   const total = Object.values(leanData).reduce((a, b) => a + b, 0) || 1;
