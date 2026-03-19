@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { supabase, getSessionId } from "./supabase";
+import { Chart, RadarController, LineElement, PointElement, RadialLinearScale, Filler, Tooltip, CategoryScale, LinearScale, BarController, BarElement } from "chart.js";
+Chart.register(RadarController, LineElement, PointElement, RadialLinearScale, Filler, Tooltip, CategoryScale, LinearScale, BarController, BarElement);
 
 const TABS = [
   { label: "For You",   category: "general" },
@@ -81,164 +83,136 @@ async function trackRead(category, corroboration) {
 
 // ── SPIDER CHART ──
 function SpiderChart({ data }) {
-  const size = 220;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = 80;
-  const axes = [
-    { key: "general",    label: "Top News",    color: "#00C4A8" },
-    { key: "technology", label: "Tech",         color: "#00C4A8" },
-    { key: "business",   label: "Markets",      color: "#F59E0B" },
-    { key: "science",    label: "Science",      color: "#10B981" },
-    { key: "health",     label: "Health",       color: "#6366F1" },
-  ];
-  const n = axes.length;
-  const max = Math.max(...Object.values(data), 1);
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
 
-  const angleFor = (i) => (Math.PI * 2 * i) / n - Math.PI / 2;
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) chartRef.current.destroy();
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+    const labelColor = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
+    chartRef.current = new Chart(canvasRef.current, {
+      type: "radar",
+      data: {
+        labels: ["Top News", "Tech", "Markets", "Science", "Health"],
+        datasets: [{
+          data: [
+            data.general || 0,
+            data.technology || 0,
+            data.business || 0,
+            data.science || 0,
+            data.health || 0,
+          ],
+          backgroundColor: "rgba(0,196,168,0.12)",
+          borderColor: "#00C4A8",
+          borderWidth: 2,
+          pointBackgroundColor: "#00C4A8",
+          pointBorderColor: isDark ? "#1a1a1a" : "#ffffff",
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: isDark ? "#2a2a2a" : "#ffffff",
+            titleColor: isDark ? "#ffffff" : "#0A0C10",
+            bodyColor: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)",
+            borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+            borderWidth: 1,
+            padding: 10,
+            callbacks: { label: ctx => ` ${ctx.raw} articles` }
+          }
+        },
+        scales: {
+          r: {
+            min: 0,
+            grid: { color: gridColor },
+            angleLines: { color: gridColor },
+            ticks: { display: false, stepSize: 1 },
+            pointLabels: {
+              color: labelColor,
+              font: { size: 11, family: "DM Mono, monospace" },
+            }
+          }
+        }
+      }
+    });
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [data]);
 
-  const point = (i, val) => {
-    const angle = angleFor(i);
-    const dist = (val / max) * r;
-    return {
-      x: cx + dist * Math.cos(angle),
-      y: cy + dist * Math.sin(angle),
-    };
-  };
-
-  const gridPoints = (level) =>
-    axes.map((_, i) => {
-      const angle = angleFor(i);
-      const dist = (level / 4) * r;
-      return `${cx + dist * Math.cos(angle)},${cy + dist * Math.sin(angle)}`;
-    }).join(" ");
-
-  const dataPoints = axes.map((ax, i) => {
-    const p = point(i, data[ax.key] || 0);
-    return `${p.x},${p.y}`;
-  }).join(" ");
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* Grid rings */}
-      {[1, 2, 3, 4].map(level => (
-        <polygon
-          key={level}
-          points={gridPoints(level)}
-          fill="none"
-          stroke="rgba(0,0,0,0.06)"
-          strokeWidth="1"
-        />
-      ))}
-
-      {/* Axis lines */}
-      {axes.map((ax, i) => {
-        const angle = angleFor(i);
-        return (
-          <line
-            key={ax.key}
-            x1={cx} y1={cy}
-            x2={cx + r * Math.cos(angle)}
-            y2={cy + r * Math.sin(angle)}
-            stroke="rgba(0,0,0,0.08)"
-            strokeWidth="1"
-          />
-        );
-      })}
-
-      {/* Data polygon */}
-      <polygon
-        points={dataPoints}
-        fill="rgba(0,196,168,0.15)"
-        stroke="#00C4A8"
-        strokeWidth="2"
-      />
-
-      {/* Data points */}
-      {axes.map((ax, i) => {
-        const p = point(i, data[ax.key] || 0);
-        return (
-          <circle
-            key={ax.key}
-            cx={p.x} cy={p.y}
-            r="4"
-            fill="#00C4A8"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-        );
-      })}
-
-      {/* Labels */}
-      {axes.map((ax, i) => {
-        const angle = angleFor(i);
-        const labelR = r + 22;
-        const lx = cx + labelR * Math.cos(angle);
-        const ly = cy + labelR * Math.sin(angle);
-        return (
-          <text
-            key={ax.key}
-            x={lx} y={ly}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize="9"
-            fontFamily="DM Mono, monospace"
-            letterSpacing="0.5"
-            fill="#6B7280"
-          >
-            {ax.label.toUpperCase()}
-          </text>
-        );
-      })}
-    </svg>
-  );
+  return <canvas ref={canvasRef} style={{ maxHeight: 260 }} />;
 }
 
 
 // ── LEAN BAR CHART ──
 function LeanChart({ leanData }) {
-  const total = Object.values(leanData).reduce((a, b) => a + b, 0) || 1;
-  const bars = [
-    { key: "left",         label: "Left",    color: "#3B82F6" },
-    { key: "center_left",  label: "C-Left",  color: "#60A5FA" },
-    { key: "center",       label: "Center",  color: "#9CA3AF" },
-    { key: "center_right", label: "C-Right", color: "#F97316" },
-    { key: "right",        label: "Right",   color: "#EF4444" },
-  ];
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) chartRef.current.destroy();
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+    const labelColor = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
+    chartRef.current = new Chart(canvasRef.current, {
+      type: "bar",
+      data: {
+        labels: ["Left", "C-Left", "Center", "C-Right", "Right"],
+        datasets: [{
+          data: [
+            leanData.left || 0,
+            leanData.center_left || 0,
+            leanData.center || 0,
+            leanData.center_right || 0,
+            leanData.right || 0,
+          ],
+          backgroundColor: ["#378ADD", "#85B7EB", "#888780", "#EF9F27", "#E24B4A"],
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: isDark ? "#2a2a2a" : "#ffffff",
+            titleColor: isDark ? "#ffffff" : "#0A0C10",
+            bodyColor: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)",
+            borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+            borderWidth: 1,
+            padding: 10,
+            callbacks: { label: ctx => ` ${ctx.raw} sources` }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: labelColor, font: { size: 11, family: "DM Mono, monospace" } },
+            border: { display: false }
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: { color: labelColor, font: { size: 11 }, stepSize: 1 },
+            border: { display: false }
+          }
+        }
+      }
+    });
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [leanData]);
 
   return (
-    <div style={{ width: "100%" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60, marginBottom: 6 }}>
-        {bars.map(b => {
-          const val = leanData[b.key] || 0;
-          const pct = (val / total) * 100;
-          return (
-            <div key={b.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-              <div style={{
-                width: "100%",
-                height: `${Math.max(pct, 2)}%`,
-                background: b.color,
-                borderRadius: "3px 3px 0 0",
-                opacity: pct < 1 ? 0.2 : 1,
-              }}/>
-            </div>
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", gap: 6 }}>
-        {bars.map(b => (
-          <div key={b.key} style={{ flex: 1, textAlign: "center" }}>
-            <div style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 7, color: b.color, letterSpacing: 0.3,
-            }}>{b.label}</div>
-            <div style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 8, color: "#6B7280",
-            }}>{leanData[b.key] || 0}</div>
-          </div>
-        ))}
-      </div>
+    <div style={{ position: "relative", height: 160, width: "100%" }}>
+      <canvas ref={canvasRef} />
     </div>
   );
 }
@@ -258,14 +232,12 @@ function ProfilePage() {
 
       if (error || !data) { setLoading(false); return; }
 
-      // Category counts
       const catCounts = {};
       CATEGORY_LIST.forEach(c => catCounts[c] = 0);
       data.forEach(row => {
         if (catCounts[row.category] !== undefined) catCounts[row.category]++;
       });
 
-      // Lean totals
       const lean = { left: 0, center_left: 0, center: 0, center_right: 0, right: 0 };
       data.forEach(row => {
         lean.left         += row.lean_left || 0;
@@ -282,139 +254,74 @@ function ProfilePage() {
   }, []);
 
   return (
-    <div style={{
-      flex: 1, overflow: "auto",
-      background: "#F5F2ED",
-      padding: "24px 20px",
-    }}>
+    <div style={{ flex: 1, overflow: "auto", background: "#F5F2ED", padding: "24px 20px" }}>
+
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 28, color: "#0A0C10", letterSpacing: 4,
-        }}>
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: "#0A0C10", letterSpacing: 4 }}>
           YOUR BRIEF<span style={{ color: "#00C4A8" }}>.</span>
         </div>
-        <div style={{
-          fontFamily: "'DM Mono', monospace",
-          fontSize: 10, color: "#9CA3AF", letterSpacing: 1, marginTop: 4,
-        }}>READING PROFILE</div>
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF", letterSpacing: 1, marginTop: 4 }}>
+          READING PROFILE
+        </div>
       </div>
 
       {loading ? (
-        <div style={{
-          textAlign: "center", paddingTop: 60,
-          fontFamily: "'DM Mono', monospace",
-          fontSize: 11, color: "#9CA3AF", letterSpacing: 2,
-        }}>LOADING...</div>
+        <div style={{ textAlign: "center", paddingTop: 60, fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#9CA3AF", letterSpacing: 2 }}>
+          LOADING...
+        </div>
       ) : !reads || reads.total === 0 ? (
-        <div style={{
-          textAlign: "center", paddingTop: 60,
-        }}>
+        <div style={{ textAlign: "center", paddingTop: 60 }}>
           <div style={{ fontSize: 32, marginBottom: 16 }}>📰</div>
-          <div style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontSize: 20, color: "#0A0C10", marginBottom: 8,
-          }}>No reads yet</div>
-          <div style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13, color: "#9CA3AF", lineHeight: 1.6,
-          }}>Start scrolling through stories and your reading profile will appear here.</div>
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: "#0A0C10", marginBottom: 8 }}>No reads yet</div>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#9CA3AF", lineHeight: 1.6 }}>
+            Generate a brief or tap Read Full Story to start building your profile.
+          </div>
         </div>
       ) : (
         <>
-          {/* Total reads */}
-          <div style={{
-            background: "rgba(0,196,168,0.06)",
-            border: "1px solid rgba(0,196,168,0.2)",
-            borderRadius: 12, padding: "14px 16px",
-            marginBottom: 20,
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-          }}>
-            <span style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 10, color: "#6B7280", letterSpacing: 1,
-            }}>STORIES READ</span>
-            <span style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 32, color: "#00C4A8", letterSpacing: 2,
-            }}>{reads.total}</span>
+          {/* Stories read metric */}
+          <div style={{ background: "rgba(0,196,168,0.06)", border: "1px solid rgba(0,196,168,0.2)", borderRadius: 12, padding: "14px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#6B7280", letterSpacing: 1 }}>STORIES READ</span>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "#00C4A8", letterSpacing: 2 }}>{reads.total}</span>
           </div>
 
-          {/* Spider chart */}
-          <div style={{
-            background: "white",
-            border: "1px solid rgba(0,0,0,0.07)",
-            borderRadius: 16, padding: "20px 16px",
-            marginBottom: 20,
-          }}>
-            <div style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 9, color: "#9CA3AF",
-              letterSpacing: 2, marginBottom: 16,
-              textTransform: "uppercase",
-            }}>Topic Breakdown</div>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <SpiderChart data={reads.catCounts} />
+          {/* Radar chart */}
+          <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 16, padding: "20px 16px", marginBottom: 16 }}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>
+              Topic Breakdown
             </div>
+            <SpiderChart data={reads.catCounts} />
           </div>
 
           {/* Lean chart */}
-          <div style={{
-            background: "white",
-            border: "1px solid rgba(0,0,0,0.07)",
-            borderRadius: 16, padding: "20px 16px",
-            marginBottom: 20,
-          }}>
-            <div style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 9, color: "#9CA3AF",
-              letterSpacing: 2, marginBottom: 16,
-              textTransform: "uppercase",
-            }}>Source Lean Distribution</div>
+          <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 16, padding: "20px 16px", marginBottom: 16 }}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>
+              Source Lean Distribution
+            </div>
             <LeanChart leanData={reads.lean} />
           </div>
 
-          {/* Category breakdown */}
-          <div style={{
-            background: "white",
-            border: "1px solid rgba(0,0,0,0.07)",
-            borderRadius: 16, padding: "20px 16px",
-          }}>
-            <div style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 9, color: "#9CA3AF",
-              letterSpacing: 2, marginBottom: 16,
-              textTransform: "uppercase",
-            }}>By Category</div>
+          {/* Category breakdown bars */}
+          <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 16, padding: "20px 16px" }}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>
+              By Category
+            </div>
             {Object.entries(reads.catCounts).map(([cat, count]) => {
               const pct = Math.round((count / reads.total) * 100);
               const color = CATEGORY_COLORS[cat];
               return (
-                <div key={cat} style={{ marginBottom: 10 }}>
-                  <div style={{
-                    display: "flex", justifyContent: "space-between",
-                    marginBottom: 4,
-                  }}>
-                    <span style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 9, color: "#6B7280",
-                      letterSpacing: 1, textTransform: "uppercase",
-                    }}>{CATEGORY_LABELS[cat]}</span>
-                    <span style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 9, color: color,
-                    }}>{count} · {pct}%</span>
+                <div key={cat} style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#6B7280", letterSpacing: 1, textTransform: "uppercase" }}>
+                      {CATEGORY_LABELS[cat]}
+                    </span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color }}>
+                      {count} · {pct}%
+                    </span>
                   </div>
-                  <div style={{
-                    height: 4, background: "rgba(0,0,0,0.06)",
-                    borderRadius: 2, overflow: "hidden",
-                  }}>
-                    <div style={{
-                      height: "100%", width: `${pct}%`,
-                      background: color, borderRadius: 2,
-                      transition: "width 0.6s ease",
-                    }}/>
+                  <div style={{ height: 4, background: "rgba(0,0,0,0.06)", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.6s ease" }}/>
                   </div>
                 </div>
               );
