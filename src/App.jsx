@@ -493,10 +493,10 @@ export default function App() {
   const color = CATEGORY_COLORS[activeTab.category];
 
   return (
-    <div style={{ background: "#E8E4DD", minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "sans-serif" }}>
+    <div style={{ background: "#F5F2ED", minHeight: "100dvh", display: "flex", justifyContent: "center", alignItems: "flex-start", fontFamily: "sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
 
-      <div style={{ width: 390, height: 844, background: "#F5F2ED", borderRadius: 44, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 32px 64px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.08)" }}>
+      <div style={{ width: "100%", maxWidth: 480, height: "100dvh", background: "#F5F2ED", borderRadius: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
 
         {/* Header */}
         <div style={{ padding: "18px 24px 0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F5F2ED", flexShrink: 0 }}>
