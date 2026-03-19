@@ -507,7 +507,7 @@ export default function App() {
       .then(r => r.json())
       .then(data => {
         if (data.status !== "ok") throw new Error(data.message);
-        setArticles(data.articles.filter(a => a.title && a.title !== "[Removed]"));
+        setArticles(data.articles.filter(a => a.title && a.title !== "[Removed]" && a.urlToImage))
         setLoading(false);
       })
       .catch(err => { setError(err.message); setLoading(false); });
