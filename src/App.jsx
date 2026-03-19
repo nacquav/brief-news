@@ -390,7 +390,13 @@ function NewsCard({ item, color, label, category, onRead }) {
 
         <div style={{ flex: 1, overflow: "auto", marginBottom: 12 }}>
           {showSummary ? (
-            <div style={{ background: "rgba(0,196,168,0.06)", border: "1px solid rgba(0,196,168,0.2)", borderRadius: 10, padding: "10px 12px" }}>
+            <div 
+              onTouchStart={e => e.stopPropagation()}
+              onTouchEnd={e => e.stopPropagation()}
+              onTouchMove={e => e.stopPropagation()}
+              style={{ background: "rgba(0,196,168,0.06)", border: "1px solid rgba(0,196,168,0.2)", borderRadius: 10, padding: "10px 12px", overflow: "auto", maxHeight: 200 }}
+            >
+
               {summaryLoading ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: "16px 0" }}>
                   <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#00C4A8" }}/>
