@@ -89,9 +89,8 @@ function SpiderChart({ data }) {
   useEffect(() => {
     if (!canvasRef.current) return;
     if (chartRef.current) chartRef.current.destroy();
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-    const labelColor = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
+    const gridColor = "rgba(0,0,0,0.07)";
+    const labelColor = "rgba(0,0,0,0.5)";
     chartRef.current = new Chart(canvasRef.current, {
       type: "radar",
       data: {
@@ -167,9 +166,8 @@ function LeanChart({ leanData }) {
   useEffect(() => {
     if (!canvasRef.current) return;
     if (chartRef.current) chartRef.current.destroy();
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-    const labelColor = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
+    const gridColor = "rgba(0,0,0,0.07)";
+    const labelColor = "rgba(0,0,0,0.5)";
     chartRef.current = new Chart(canvasRef.current, {
       type: "bar",
       data: {
