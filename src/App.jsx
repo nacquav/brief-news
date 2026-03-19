@@ -342,10 +342,10 @@ function NewsCard({ item, color, label, category, onRead }) {
     }}>
       
       {item.urlToImage && (
-        <div style={{ width: "100%", height: "190px", flexShrink: 0, overflow: "hidden", background: "#E8E4DD" }}>
+        <div style={{ width: "100%", height: "160px", flexShrink: 0, overflow: "hidden", background: "#E8E4DD" }}>
           <img
             src={item.urlToImage} alt={item.title}
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }}
             onError={e => { e.target.parentElement.style.display = "none"; }}
           />
         </div>
@@ -384,7 +384,7 @@ function NewsCard({ item, color, label, category, onRead }) {
           </div>
         </div>
 
-        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: item.urlToImage ? 19 : 23, fontWeight: 400, color: "#0A0C10", lineHeight: 1.25, margin: "0 0 8px 0", letterSpacing: "-0.3px" }}>{item.title}</h2>
+        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: item.urlToImage ? 17 : 22, fontWeight: 400, color: "#0A0C10", lineHeight: 1.25, margin: "0 0 8px 0", letterSpacing: "-0.3px" }}>{item.title}</h2>
 
         <div style={{ width: 32, height: 2, background: color, borderRadius: 1, marginBottom: 10, flexShrink: 0 }}/>
 
