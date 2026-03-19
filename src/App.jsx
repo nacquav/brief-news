@@ -340,6 +340,14 @@ function NewsCard({ item, color, label, category, onRead }) {
       display: "flex", flexDirection: "column",
       background: "#F5F2ED", boxSizing: "border-box", overflow: "hidden",
     }}>
+      <div style={{
+            position: "absolute",
+            bottom: 0, left: 0, right: 0,
+            height: 40,
+            background: "linear-gradient(transparent, #F5F2ED)",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}/>
       {item.urlToImage && (
         <div style={{ width: "100%", height: "190px", flexShrink: 0, overflow: "hidden", background: "#E8E4DD" }}>
           <img
@@ -387,8 +395,9 @@ function NewsCard({ item, color, label, category, onRead }) {
 
         <div style={{ width: 32, height: 2, background: color, borderRadius: 1, marginBottom: 10, flexShrink: 0 }}/>
 
-        <div style={{ flex: 1, overflow: "auto", marginBottom: 12 }}>
+        <div style={{ flex: 1, overflow: "hidden", marginBottom: 12, position: "relative" }}>
           {showSummary ? (
+            
             <div style={{ background: "rgba(0,196,168,0.06)", border: "1px solid rgba(0,196,168,0.2)", borderRadius: 10, padding: "10px 12px" }}>
               {summaryLoading ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: "16px 0" }}>
@@ -407,7 +416,7 @@ function NewsCard({ item, color, label, category, onRead }) {
             </div>
           ) : (
             item.description && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7280", lineHeight: 1.6, margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: item.urlToImage ? 2 : 4, WebkitBoxOrient: "vertical" }}>{item.description}</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7280", lineHeight: 1.6, margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: item.urlToImage ? 5 : 8, WebkitBoxOrient: "vertical" }}>{item.description}</p>
             )
           )}
         </div>
