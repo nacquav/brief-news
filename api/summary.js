@@ -35,8 +35,12 @@ export default async function handler(req, res) {
           - Strictly neutral tone — report what happened, not what it means for people
           - No editorializing, no emotional language, no speculative impact statements
           - Never start with the headline or "This article"
+          - Bold the single most important fact in each point using **bold**
           - Final line: one neutral sentence on the broader context or significance
+          - (Critical) Final line: one neutral sentence on broader context — must add new information, not restate what was already said. Format the final line in bold.
+          - Avoid repeating the same proper nouns or facts across points
 
+          
           Target: 60 seconds to read aloud. Around 100 words.
 
           Article: ${articleText}
