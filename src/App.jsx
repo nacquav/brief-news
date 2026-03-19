@@ -388,7 +388,7 @@ function NewsCard({ item, color, label, category, onRead }) {
 
         <div style={{ width: 32, height: 2, background: color, borderRadius: 1, marginBottom: 10, flexShrink: 0 }}/>
 
-        <div style={{ flex: 1, overflow: "hidden", marginBottom: 12, position: "relative" }}>
+        <div style={{ flex: 1, overflow: "auto", marginBottom: 12 }}>
           {showSummary ? (
             <div style={{ background: "rgba(0,196,168,0.06)", border: "1px solid rgba(0,196,168,0.2)", borderRadius: 10, padding: "10px 12px" }}>
               {summaryLoading ? (
@@ -412,18 +412,6 @@ function NewsCard({ item, color, label, category, onRead }) {
             )
           )}
         </div>
-
-        {/* Fade */}
-        {!showSummary && (
-          <div style={{
-            height: 32,
-            background: "linear-gradient(transparent, #F5F2ED)",
-            marginBottom: -12,
-            marginLeft: -20,
-            marginRight: -20,
-            flexShrink: 0,
-          }}/>
-        )}
 
         {/* Source + time */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, marginBottom: 12, borderTop: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
