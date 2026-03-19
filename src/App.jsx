@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { supabase, getSessionId } from "./supabase";
-import { Chart, registerables } from "chart.js";
-Chart.register(...registerables);
+
 
 const TABS = [
   { label: "For You",   category: "general" },
@@ -83,148 +82,105 @@ async function trackRead(category, corroboration) {
 
 // ── SPIDER CHART ──
 function SpiderChart({ data }) {
-  const canvasRef = useRef(null);
-  const chartRef = useRef(null);
+  const size = 260;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 85;
+  const axes = [
+    { key: "general",    label: "Top News"  },
+    { key: "technology", label: "Tech"      },
+    { key: "business",   label: "Markets"   },
+    { key: "science",    label: "Science"   },
+    { key: "health",     label: "Health"    },
+  ];
+  const n = axes.length;
+  const max = Math.max(...Object.values(data), 1);
+  const angle = (i) => (Math.PI * 2 * i) / n - Math.PI / 2;
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    if (chartRef.current) chartRef.current.destroy();
-    const gridColor = "rgba(0,0,0,0.07)";
-    const labelColor = "rgba(0,0,0,0.5)";
-    chartRef.current = new Chart(canvasRef.current, {
-      type: "radar",
-      data: {
-        labels: ["Top News", "Tech", "Markets", "Science", "Health"],
-        datasets: [{
-          data: [
-            data.general || 0,
-            data.technology || 0,
-            data.business || 0,
-            data.science || 0,
-            data.health || 0,
-          ],
-          backgroundColor: "rgba(0,196,168,0.12)",
-          borderColor: "#00C4A8",
-          borderWidth: 2,
-          pointBackgroundColor: "#00C4A8",
-          pointBorderColor: isDark ? "#1a1a1a" : "#ffffff",
-          pointBorderWidth: 2,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        layout: {
-          padding: {
-            top: 20,
-            bottom: 20,
-            left: 30,
-            right: 30,
-          }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: isDark ? "#2a2a2a" : "#ffffff",
-            titleColor: isDark ? "#ffffff" : "#0A0C10",
-            bodyColor: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)",
-            borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-            borderWidth: 1,
-            padding: 10,
-            callbacks: { label: ctx => ` ${ctx.raw} articles` }
-          }
-        },
-        scales: {
-          r: {
-            min: 0,
-            grid: { color: gridColor },
-            angleLines: { color: gridColor },
-            ticks: { display: false, stepSize: 1 },
-            pointLabels: {
-              color: labelColor,
-              font: { size: 10, family: "DM Mono, monospace" },
-              padding: 8,
-            }
-          }
-        }
-      }
-    });
-    return () => { if (chartRef.current) chartRef.current.destroy(); };
-  }, [data]);
+  const gridPoly = (level) =>
+    axes.map((_, i) => {
+      const a = angle(i);
+      const d = (level / 4) * r;
+      return `${cx + d * Math.cos(a)},${cy + d * Math.sin(a)}`;
+    }).join(" ");
 
-  return <canvas ref={canvasRef} style={{ maxHeight: 260 }} />;
+  const dataPoly = axes.map((ax, i) => {
+    const a = angle(i);
+    const d = ((data[ax.key] || 0) / max) * r;
+    return `${cx + d * Math.cos(a)},${cy + d * Math.sin(a)}`;
+  }).join(" ");
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${size} ${size}`}>
+      {[1, 2, 3, 4].map(l => (
+        <polygon key={l} points={gridPoly(l)} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="1"/>
+      ))}
+      {axes.map((_, i) => {
+        const a = angle(i);
+        return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(a)} y2={cy + r * Math.sin(a)} stroke="rgba(0,0,0,0.07)" strokeWidth="1"/>;
+      })}
+      <polygon points={dataPoly} fill="rgba(0,196,168,0.15)" stroke="#00C4A8" strokeWidth="2"/>
+      {axes.map((ax, i) => {
+        const a = angle(i);
+        const d = ((data[ax.key] || 0) / max) * r;
+        return <circle key={i} cx={cx + d * Math.cos(a)} cy={cy + d * Math.sin(a)} r="5" fill="#00C4A8" stroke="white" strokeWidth="2"/>;
+      })}
+      {axes.map((ax, i) => {
+        const a = angle(i);
+        const labelR = r + 26;
+        const lx = cx + labelR * Math.cos(a);
+        const ly = cy + labelR * Math.sin(a);
+        return (
+          <text key={i} x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+            fontSize="9" fontFamily="DM Mono, monospace" fill="rgba(0,0,0,0.5)" letterSpacing="0.5">
+            {ax.label.toUpperCase()}
+          </text>
+        );
+      })}
+    </svg>
+  );
 }
 
 
 // ── LEAN BAR CHART ──
 function LeanChart({ leanData }) {
-  const canvasRef = useRef(null);
-  const chartRef = useRef(null);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    if (chartRef.current) chartRef.current.destroy();
-    const gridColor = "rgba(0,0,0,0.07)";
-    const labelColor = "rgba(0,0,0,0.5)";
-    chartRef.current = new Chart(canvasRef.current, {
-      type: "bar",
-      data: {
-        labels: ["Left", "C-Left", "Center", "C-Right", "Right"],
-        datasets: [{
-          data: [
-            leanData.left || 0,
-            leanData.center_left || 0,
-            leanData.center || 0,
-            leanData.center_right || 0,
-            leanData.right || 0,
-          ],
-          backgroundColor: ["#378ADD", "#85B7EB", "#888780", "#EF9F27", "#E24B4A"],
-          borderRadius: 4,
-          borderSkipped: false,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: isDark ? "#2a2a2a" : "#ffffff",
-            titleColor: isDark ? "#ffffff" : "#0A0C10",
-            bodyColor: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)",
-            borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-            borderWidth: 1,
-            padding: 10,
-            callbacks: { label: ctx => ` ${ctx.raw} sources` }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: {
-              color: labelColor,
-              font: { size: 9, family: "DM Mono, monospace" },
-              maxRotation: 0,
-              minRotation: 0,
-            },
-            border: { display: false }
-          },
-          y: {
-            grid: { color: gridColor },
-            ticks: { color: labelColor, font: { size: 11 }, stepSize: 1 },
-            border: { display: false }
-          }
-        }
-      }
-    });
-    return () => { if (chartRef.current) chartRef.current.destroy(); };
-  }, [leanData]);
+  const bars = [
+    { key: "left",         label: "Left",    color: "#3B82F6" },
+    { key: "center_left",  label: "C-Left",  color: "#60A5FA" },
+    { key: "center",       label: "Center",  color: "#9CA3AF" },
+    { key: "center_right", label: "C-Right", color: "#F97316" },
+    { key: "right",        label: "Right",   color: "#EF4444" },
+  ];
+  const total = Math.max(Object.values(leanData).reduce((a, b) => a + b, 0), 1);
+  const maxVal = Math.max(...bars.map(b => leanData[b.key] || 0), 1);
 
   return (
-    <div style={{ position: "relative", height: 160, width: "100%" }}>
-      <canvas ref={canvasRef} />
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80, marginBottom: 8 }}>
+        {bars.map(b => {
+          const val = leanData[b.key] || 0;
+          const pct = (val / maxVal) * 100;
+          return (
+            <div key={b.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", gap: 4 }}>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: b.color }}>{val}</span>
+              <div style={{
+                width: "100%",
+                height: `${Math.max(pct, 3)}%`,
+                background: b.color,
+                borderRadius: "3px 3px 0 0",
+                opacity: val === 0 ? 0.15 : 1,
+              }}/>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        {bars.map(b => (
+          <div key={b.key} style={{ flex: 1, textAlign: "center" }}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 7, color: b.color, letterSpacing: 0.3 }}>{b.label}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
