@@ -65,7 +65,6 @@ async function trackRead(category, corroboration) {
   try {
     const sessionId = getSessionId();
     const counts = corroboration?.counts || {};
-    console.log("Tracking read:", { sessionId, category, counts });
     const { data, error } = await supabase.from("article_reads").insert({
       session_id: sessionId,
       category,
@@ -75,7 +74,6 @@ async function trackRead(category, corroboration) {
       lean_center_right: counts["Center-Right"] || 0,
       lean_right:        counts["Right"]         || 0,
     });
-    console.log("Supabase response:", { data, error });
   } catch (err) {
     console.error("Track error:", err);
   }
