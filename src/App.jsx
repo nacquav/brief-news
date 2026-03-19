@@ -137,7 +137,8 @@ function SpiderChart({ data }) {
             ticks: { display: false, stepSize: 1 },
             pointLabels: {
               color: labelColor,
-              font: { size: 11, family: "DM Mono, monospace" },
+              font: { size: 10, family: "DM Mono, monospace" },
+              padding: 8,
             }
           }
         }
@@ -196,7 +197,12 @@ function LeanChart({ leanData }) {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: labelColor, font: { size: 11, family: "DM Mono, monospace" } },
+            ticks: {
+              color: labelColor,
+              font: { size: 9, family: "DM Mono, monospace" },
+              maxRotation: 0,
+              minRotation: 0,
+            },
             border: { display: false }
           },
           y: {
