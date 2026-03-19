@@ -117,6 +117,14 @@ function SpiderChart({ data }) {
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        layout: {
+          padding: {
+            top: 20,
+            bottom: 20,
+            left: 30,
+            right: 30,
+          }
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
