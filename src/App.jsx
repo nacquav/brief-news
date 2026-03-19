@@ -340,14 +340,7 @@ function NewsCard({ item, color, label, category, onRead }) {
       display: "flex", flexDirection: "column",
       background: "#F5F2ED", boxSizing: "border-box", overflow: "hidden",
     }}>
-      <div style={{
-            position: "absolute",
-            bottom: 0, left: 0, right: 0,
-            height: 40,
-            background: "linear-gradient(transparent, #F5F2ED)",
-            pointerEvents: "none",
-            zIndex: 1,
-          }}/>
+      
       {item.urlToImage && (
         <div style={{ width: "100%", height: "190px", flexShrink: 0, overflow: "hidden", background: "#E8E4DD" }}>
           <img
@@ -397,7 +390,6 @@ function NewsCard({ item, color, label, category, onRead }) {
 
         <div style={{ flex: 1, overflow: "hidden", marginBottom: 12, position: "relative" }}>
           {showSummary ? (
-            
             <div style={{ background: "rgba(0,196,168,0.06)", border: "1px solid rgba(0,196,168,0.2)", borderRadius: 10, padding: "10px 12px" }}>
               {summaryLoading ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: "16px 0" }}>
@@ -421,6 +413,19 @@ function NewsCard({ item, color, label, category, onRead }) {
           )}
         </div>
 
+        {/* Fade */}
+        {!showSummary && (
+          <div style={{
+            height: 32,
+            background: "linear-gradient(transparent, #F5F2ED)",
+            marginBottom: -12,
+            marginLeft: -20,
+            marginRight: -20,
+            flexShrink: 0,
+          }}/>
+        )}
+
+        {/* Source + time */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, marginBottom: 12, borderTop: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
           <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: "#0A0C10" }}>{item.source?.name}</span>
           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF" }}>{timeAgo(item.publishedAt)}</span>
