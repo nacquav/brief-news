@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { supabase, getSessionId } from "./supabase";
-import { Chart, RadarController, LineElement, PointElement, RadialLinearScale, Filler, Tooltip, CategoryScale, LinearScale, BarController, BarElement } from "chart.js";
-Chart.register(RadarController, LineElement, PointElement, RadialLinearScale, Filler, Tooltip, CategoryScale, LinearScale, BarController, BarElement);
+import { Chart, registerables } from "chart.js";
+Chart.register(...registerables);
 
 const TABS = [
   { label: "For You",   category: "general" },
