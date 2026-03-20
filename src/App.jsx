@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { supabase, getSessionId } from "./supabase";
 import { supabase, getSessionId, hasSeenOnboarding, markOnboardingDone } from "./supabase";
 
 const TABS = [
