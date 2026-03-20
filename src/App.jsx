@@ -85,29 +85,15 @@ function OnboardingScreen({ onDone }) {
 
   const slides = [
     {
-      eyebrow: "WELCOME TO",
-      title: "BRIEF.",
-      titleDot: true,
-      body: "The news you need. Nothing you don't.\n\nNo algorithm deciding what you see. No outrage bait. No infinite scroll designed to trap you.\n\nJust the world's most important stories — fast, clear, and honest.",
+      eyebrow: "BUILT DIFFERENTLY",
       accent: "#00C4A8",
     },
     {
       eyebrow: "WHAT MAKES US DIFFERENT",
-      title: "News the way it should be.",
-      titleDot: false,
-      features: [
-        { icon: "⚡", label: "60s BRIEF", desc: "AI summarizes every story in under a minute. Formatted for humans, not search engines." },
-        { icon: "◎", label: "Corroboration Score", desc: "See how many sources across the political spectrum covered each story." },
-        { icon: "◑", label: "Your Reading Profile", desc: "A live spider chart of your reading habits. Know your blind spots." },
-      ],
       accent: "#00C4A8",
     },
     {
-      eyebrow: "YOU'RE ALL SET",
-      title: "Start reading.",
-      titleDot: false,
-      body: "BRIEF. is built for people who care about staying informed — without being consumed by it.\n\nMore coming soon: AI bias detection, podcast-style audio briefs, and your monthly News DNA report.",
-      cta: "ENTER BRIEF.",
+      eyebrow: "WHAT'S COMING",
       accent: "#00C4A8",
     },
   ];
@@ -121,15 +107,13 @@ function OnboardingScreen({ onDone }) {
     touchStart.current = null;
   };
 
-  const current = slides[slide];
-
   return (
     <div
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       style={{
         position: "fixed", inset: 0,
-        background: "#0A0C10",
+        background: "#F5F2ED",
         display: "flex", flexDirection: "column",
         zIndex: 100, overflow: "hidden",
       }}
@@ -137,7 +121,7 @@ function OnboardingScreen({ onDone }) {
       {/* Progress bars */}
       <div style={{ display: "flex", gap: 4, padding: "56px 24px 0" }}>
         {slides.map((_, i) => (
-          <div key={i} style={{ flex: 1, height: 2, borderRadius: 1, background: i <= slide ? "#00C4A8" : "rgba(255,255,255,0.15)", transition: "background 0.3s" }}/>
+          <div key={i} style={{ flex: 1, height: 2, borderRadius: 1, background: i <= slide ? "#00C4A8" : "rgba(0,0,0,0.1)", transition: "background 0.3s" }}/>
         ))}
       </div>
 
@@ -145,55 +129,157 @@ function OnboardingScreen({ onDone }) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 28px 0", overflow: "hidden" }}>
 
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 3, color: "#00C4A8", marginBottom: 20 }}>
-          {current.eyebrow}
+          {slides[slide].eyebrow}
         </div>
 
-        {current.titleDot ? (
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 28 }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 72, color: "white", letterSpacing: 8, lineHeight: 1 }}>
-              {current.title.replace(".", "")}
+        {/* SLIDE 1 */}
+        {slide === 0 && (
+          <>
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 32, color: "#0A0C10", lineHeight: 1.2, marginBottom: 16, fontWeight: 400 }}>
+                The news wasn't built for you.
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 56, color: "#0A0C10", letterSpacing: 6, lineHeight: 1 }}>BRIEF</div>
+                <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#00C4A8", marginBottom: 6, flexShrink: 0 }}/>
+                <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 32, color: "#0A0C10", lineHeight: 1 }}> was.</div>
+              </div>
             </div>
-            <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#00C4A8", marginBottom: 8, flexShrink: 0 }}/>
-          </div>
-        ) : (
-          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 36, color: "white", lineHeight: 1.2, marginBottom: 28, fontWeight: 400 }}>
-            {current.title}
-          </div>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              {[
+                "Most news apps are designed to keep you scrolling — not to keep you informed.",
+                "No algorithm deciding what you see. No outrage bait. No infinite scroll designed to trap you.",
+                "Just the world's most important stories — fast, clear, and honest.",
+              ].map((para, i) => (
+                <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: i === 0 ? "#0A0C10" : "#6B7280", lineHeight: 1.7, margin: "0 0 18px 0", fontWeight: i === 0 ? 500 : 400 }}>
+                  {para}
+                </p>
+              ))}
+            </div>
+          </>
         )}
 
-        {current.body && (
-          <div style={{ flex: 1, overflow: "hidden" }}>
-            {current.body.split("\n\n").map((para, i) => (
-              <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: i === 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.55)", lineHeight: 1.7, margin: "0 0 20px 0" }}>
-                {para}
-              </p>
-            ))}
-          </div>
-        )}
+        {/* SLIDE 2 */}
+        {slide === 1 && (
+          <>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 30, color: "#0A0C10", lineHeight: 1.2, marginBottom: 24, fontWeight: 400 }}>
+              News the way it should be.
+            </div>
 
-        {current.features && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
-            {current.features.map((f, i) => (
-              <div key={i} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,196,168,0.12)", border: "1px solid rgba(0,196,168,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-                  {f.icon}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 20 }}>
+              {[
+                { icon: "⚡", label: "60s BRIEF", desc: "AI summarizes every story in under a minute. Formatted for humans." },
+                { icon: "◎", label: "Bias Score", desc: "See how many sources across the political spectrum covered each story." },
+              ].map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(0,196,168,0.1)", border: "1px solid rgba(0,196,168,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+                    {f.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: "#0A0C10", marginBottom: 3 }}>{f.label}</div>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#6B7280", lineHeight: 1.5 }}>{f.desc}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: "white", marginBottom: 4 }}>{f.label}</div>
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>{f.desc}</div>
+              ))}
+            </div>
+
+            {/* Mini spider chart */}
+            <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 14, padding: "14px 16px" }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#9CA3AF", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>Your Reading Profile</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <svg width="80" height="80" viewBox="0 0 120 120">
+                  {[1,2,3,4].map(l => {
+                    const pts = [0,1,2,3,4].map(i => {
+                      const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+                      const d = (l/4) * 42;
+                      return `${60 + d * Math.cos(a)},${60 + d * Math.sin(a)}`;
+                    }).join(" ");
+                    return <polygon key={l} points={pts} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="1"/>;
+                  })}
+                  {[0,1,2,3,4].map(i => {
+                    const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+                    return <line key={i} x1="60" y1="60" x2={60 + 42 * Math.cos(a)} y2={60 + 42 * Math.sin(a)} stroke="rgba(0,0,0,0.07)" strokeWidth="1"/>;
+                  })}
+                  <polygon
+                    points={[[0.9,0],[0.5,1],[0.3,2],[0.7,3],[0.6,4]].map(([v,i]) => {
+                      const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+                      const d = v * 42;
+                      return `${60 + d * Math.cos(a)},${60 + d * Math.sin(a)}`;
+                    }).join(" ")}
+                    fill="rgba(0,196,168,0.15)" stroke="#00C4A8" strokeWidth="2"
+                  />
+                </svg>
+                <div style={{ flex: 1 }}>
+                  {["Top News","Tech","Markets","Science","Health"].map((label, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#6B7280" }}>{label}</span>
+                      <div style={{ width: 40, height: 4, background: "rgba(0,0,0,0.06)", borderRadius: 2, overflow: "hidden", marginTop: 1 }}>
+                        <div style={{ height: "100%", width: `${[90,50,30,70,60][i]}%`, background: "#00C4A8", borderRadius: 2 }}/>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          </>
+        )}
+
+        {/* SLIDE 3 */}
+        {slide === 2 && (
+          <>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 30, color: "#0A0C10", lineHeight: 1.2, marginBottom: 20, fontWeight: 400 }}>
+              Start reading.
+            </div>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              {[
+                "BRIEF. is built for people who want to stay informed — without being consumed by it.",
+                "More is coming soon:",
+              ].map((para, i) => (
+                <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: i === 0 ? "#0A0C10" : "#6B7280", lineHeight: 1.7, margin: "0 0 14px 0" }}>
+                  {para}
+                </p>
+              ))}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+                {[
+                  { label: "AI Bias Detection", desc: "Real-time source classification on every article" },
+                  { label: "News DNA Report", desc: "Your monthly reading breakdown — shareable" },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#00C4A8", flexShrink: 0 }}/>
+                    <div>
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "#0A0C10" }}>{item.label} </span>
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7280" }}>{item.desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Podcast waveform graphic */}
+              <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 14, padding: "14px 16px" }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#9CA3AF", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Podcast Briefs — Coming Soon</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(0,196,168,0.1)", border: "1px solid rgba(0,196,168,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div style={{ width: 0, height: 0, borderTop: "6px solid transparent", borderBottom: "6px solid transparent", borderLeft: "10px solid #00C4A8", marginLeft: 2 }}/>
+                  </div>
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 2, height: 28 }}>
+                    {[3,6,10,7,14,9,5,12,8,4,11,7,9,5,13,6,8,10,4,7,11,5,9,6,8,12,4,7,10,5].map((h, i) => (
+                      <div key={i} style={{ flex: 1, height: `${h}px`, background: i < 10 ? "#00C4A8" : "rgba(0,196,168,0.25)", borderRadius: 1 }}/>
+                    ))}
+                  </div>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", flexShrink: 0 }}>2:34</div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
       {/* Bottom */}
-      <div style={{ padding: "24px 28px 48px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ padding: "24px 28px 48px", display: "flex", flexDirection: "column", gap: 12 }}>
         {slide < slides.length - 1 ? (
           <button
             onClick={() => setSlide(s => s + 1)}
-            style={{ width: "100%", padding: "16px", background: "#00C4A8", border: "none", borderRadius: 14, fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: 2, color: "#0A0C10", fontWeight: 600, cursor: "pointer" }}
+            style={{ width: "100%", padding: "16px", background: "#0A0C10", border: "none", borderRadius: 14, fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: 2, color: "#F5F2ED", fontWeight: 600, cursor: "pointer" }}
           >
             NEXT →
           </button>
@@ -202,31 +288,26 @@ function OnboardingScreen({ onDone }) {
             onClick={onDone}
             style={{ width: "100%", padding: "16px", background: "#00C4A8", border: "none", borderRadius: 14, fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: 2, color: "#0A0C10", fontWeight: 600, cursor: "pointer" }}
           >
-            {current.cta}
+            ENTER BRIEF. →
           </button>
         )}
-
         {slide > 0 && (
           <button
             onClick={() => setSlide(s => s - 1)}
-            style={{ width: "100%", padding: "12px", background: "none", border: "none", fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: 1, color: "rgba(255,255,255,0.3)", cursor: "pointer" }}
+            style={{ width: "100%", padding: "10px", background: "none", border: "none", fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: 1, color: "rgba(0,0,0,0.3)", cursor: "pointer" }}
           >
             ← BACK
           </button>
         )}
-
-        {/* Dots */}
         <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
           {slides.map((_, i) => (
-            <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 6, height: 6, borderRadius: 3, background: i === slide ? "#00C4A8" : "rgba(255,255,255,0.2)", transition: "all 0.3s", cursor: "pointer" }}/>
+            <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 6, height: 6, borderRadius: 3, background: i === slide ? "#00C4A8" : "rgba(0,0,0,0.15)", transition: "all 0.3s", cursor: "pointer" }}/>
           ))}
         </div>
       </div>
     </div>
   );
 }
-
-
 
 
 // ── SPIDER CHART ──
@@ -380,24 +461,16 @@ function ProfilePage() {
         </div>
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF", letterSpacing: 1, marginTop: 4 }}>
           READING PROFILE
-          <div style={{ marginBottom: 24 }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: "#0A0C10", letterSpacing: 4 }}>
-            YOUR BRIEF<span style={{ color: "#00C4A8" }}>.</span>
-          </div>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF", letterSpacing: 1, marginTop: 4 }}>
-            READING PROFILE
-          </div>
-          <button
-            onClick={() => {
-              localStorage.removeItem("brief_onboarding_done");
-              window.location.reload();
-            }}
-            style={{ marginTop: 12, background: "none", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, padding: "6px 12px", fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1, color: "#9CA3AF", cursor: "pointer" }}
-          >
-            VIEW INTRO →
-          </button>
         </div>
-        </div>
+        <button
+          onClick={() => {
+            localStorage.removeItem("brief_onboarding_done");
+            window.location.reload();
+          }}
+          style={{ marginTop: 12, background: "none", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, padding: "6px 12px", fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1, color: "#9CA3AF", cursor: "pointer" }}
+        >
+          VIEW INTRO →
+        </button>
       </div>
 
       {loading ? (
@@ -414,45 +487,31 @@ function ProfilePage() {
         </div>
       ) : (
         <>
-          {/* Stories read metric */}
           <div style={{ background: "rgba(0,196,168,0.06)", border: "1px solid rgba(0,196,168,0.2)", borderRadius: 12, padding: "14px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#6B7280", letterSpacing: 1 }}>STORIES READ</span>
             <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "#00C4A8", letterSpacing: 2 }}>{reads.total}</span>
           </div>
 
-          {/* Radar chart */}
           <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 16, padding: "20px 16px", marginBottom: 16 }}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>
-              Topic Breakdown
-            </div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>Topic Breakdown</div>
             <SpiderChart data={reads.catCounts} />
           </div>
 
-          {/* Lean chart */}
           <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 16, padding: "20px 16px", marginBottom: 16 }}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>
-              Source Lean Distribution
-            </div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>Source Lean Distribution</div>
             <LeanChart leanData={reads.lean} />
           </div>
 
-          {/* Category breakdown bars */}
           <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 16, padding: "20px 16px" }}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>
-              By Category
-            </div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#9CA3AF", letterSpacing: 2, marginBottom: 16, textTransform: "uppercase" }}>By Category</div>
             {Object.entries(reads.catCounts).map(([cat, count]) => {
               const pct = Math.round((count / reads.total) * 100);
               const color = CATEGORY_COLORS[cat];
               return (
                 <div key={cat} style={{ marginBottom: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#6B7280", letterSpacing: 1, textTransform: "uppercase" }}>
-                      {CATEGORY_LABELS[cat]}
-                    </span>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color }}>
-                      {count} · {pct}%
-                    </span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#6B7280", letterSpacing: 1, textTransform: "uppercase" }}>{CATEGORY_LABELS[cat]}</span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color }}>{count} · {pct}%</span>
                   </div>
                   <div style={{ height: 4, background: "rgba(0,0,0,0.06)", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.6s ease" }}/>
