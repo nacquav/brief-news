@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { supabase, getSessionId } from "./supabase";
-
+import { supabase, getSessionId, hasSeenOnboarding, markOnboardingDone } from "./supabase";
 
 const TABS = [
   { label: "For You",   category: "general" },
@@ -79,6 +79,156 @@ async function trackRead(category, corroboration) {
     console.error("Track error:", err);
   }
 }
+
+function OnboardingScreen({ onDone }) {
+  const [slide, setSlide] = useState(0);
+  const touchStart = useRef(null);
+
+  const slides = [
+    {
+      eyebrow: "WELCOME TO",
+      title: "BRIEF.",
+      titleDot: true,
+      body: "The news you need. Nothing you don't.\n\nNo algorithm deciding what you see. No outrage bait. No infinite scroll designed to trap you.\n\nJust the world's most important stories — fast, clear, and honest.",
+      accent: "#00C4A8",
+    },
+    {
+      eyebrow: "WHAT MAKES US DIFFERENT",
+      title: "News the way it should be.",
+      titleDot: false,
+      features: [
+        { icon: "⚡", label: "60s BRIEF", desc: "AI summarizes every story in under a minute. Formatted for humans, not search engines." },
+        { icon: "◎", label: "Corroboration Score", desc: "See how many sources across the political spectrum covered each story." },
+        { icon: "◑", label: "Your Reading Profile", desc: "A live spider chart of your reading habits. Know your blind spots." },
+      ],
+      accent: "#00C4A8",
+    },
+    {
+      eyebrow: "YOU'RE ALL SET",
+      title: "Start reading.",
+      titleDot: false,
+      body: "BRIEF. is built for people who care about staying informed — without being consumed by it.\n\nMore coming soon: AI bias detection, podcast-style audio briefs, and your monthly News DNA report.",
+      cta: "ENTER BRIEF.",
+      accent: "#00C4A8",
+    },
+  ];
+
+  const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e) => {
+    if (touchStart.current === null) return;
+    const diff = touchStart.current - e.changedTouches[0].clientX;
+    if (diff > 50 && slide < slides.length - 1) setSlide(s => s + 1);
+    if (diff < -50 && slide > 0) setSlide(s => s - 1);
+    touchStart.current = null;
+  };
+
+  const current = slides[slide];
+
+  return (
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        position: "fixed", inset: 0,
+        background: "#0A0C10",
+        display: "flex", flexDirection: "column",
+        zIndex: 100, overflow: "hidden",
+      }}
+    >
+      {/* Progress bars */}
+      <div style={{ display: "flex", gap: 4, padding: "56px 24px 0" }}>
+        {slides.map((_, i) => (
+          <div key={i} style={{ flex: 1, height: 2, borderRadius: 1, background: i <= slide ? "#00C4A8" : "rgba(255,255,255,0.15)", transition: "background 0.3s" }}/>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 28px 0", overflow: "hidden" }}>
+
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 3, color: "#00C4A8", marginBottom: 20 }}>
+          {current.eyebrow}
+        </div>
+
+        {current.titleDot ? (
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 28 }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 72, color: "white", letterSpacing: 8, lineHeight: 1 }}>
+              {current.title.replace(".", "")}
+            </div>
+            <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#00C4A8", marginBottom: 8, flexShrink: 0 }}/>
+          </div>
+        ) : (
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 36, color: "white", lineHeight: 1.2, marginBottom: 28, fontWeight: 400 }}>
+            {current.title}
+          </div>
+        )}
+
+        {current.body && (
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            {current.body.split("\n\n").map((para, i) => (
+              <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: i === 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.55)", lineHeight: 1.7, margin: "0 0 20px 0" }}>
+                {para}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {current.features && (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
+            {current.features.map((f, i) => (
+              <div key={i} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,196,168,0.12)", border: "1px solid rgba(0,196,168,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                  {f.icon}
+                </div>
+                <div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: "white", marginBottom: 4 }}>{f.label}</div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>{f.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom */}
+      <div style={{ padding: "24px 28px 48px", display: "flex", flexDirection: "column", gap: 16 }}>
+        {slide < slides.length - 1 ? (
+          <button
+            onClick={() => setSlide(s => s + 1)}
+            style={{ width: "100%", padding: "16px", background: "#00C4A8", border: "none", borderRadius: 14, fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: 2, color: "#0A0C10", fontWeight: 600, cursor: "pointer" }}
+          >
+            NEXT →
+          </button>
+        ) : (
+          <button
+            onClick={onDone}
+            style={{ width: "100%", padding: "16px", background: "#00C4A8", border: "none", borderRadius: 14, fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: 2, color: "#0A0C10", fontWeight: 600, cursor: "pointer" }}
+          >
+            {current.cta}
+          </button>
+        )}
+
+        {slide > 0 && (
+          <button
+            onClick={() => setSlide(s => s - 1)}
+            style={{ width: "100%", padding: "12px", background: "none", border: "none", fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: 1, color: "rgba(255,255,255,0.3)", cursor: "pointer" }}
+          >
+            ← BACK
+          </button>
+        )}
+
+        {/* Dots */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
+          {slides.map((_, i) => (
+            <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 6, height: 6, borderRadius: 3, background: i === slide ? "#00C4A8" : "rgba(255,255,255,0.2)", transition: "all 0.3s", cursor: "pointer" }}/>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
 
 // ── SPIDER CHART ──
 function SpiderChart({ data }) {
@@ -231,6 +381,23 @@ function ProfilePage() {
         </div>
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF", letterSpacing: 1, marginTop: 4 }}>
           READING PROFILE
+          <div style={{ marginBottom: 24 }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: "#0A0C10", letterSpacing: 4 }}>
+            YOUR BRIEF<span style={{ color: "#00C4A8" }}>.</span>
+          </div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF", letterSpacing: 1, marginTop: 4 }}>
+            READING PROFILE
+          </div>
+          <button
+            onClick={() => {
+              localStorage.removeItem("brief_onboarding_done");
+              window.location.reload();
+            }}
+            style={{ marginTop: 12, background: "none", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, padding: "6px 12px", fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1, color: "#9CA3AF", cursor: "pointer" }}
+          >
+            VIEW INTRO →
+          </button>
+        </div>
         </div>
       </div>
 
@@ -456,6 +623,14 @@ export default function App() {
   const [error, setError] = useState(null);
   const [current, setCurrent] = useState(0);
   const [screen, setScreen] = useState("feed");
+  const [showOnboarding, setShowOnboarding] = useState(!hasSeenOnboarding());
+
+  const handleOnboardingDone = () => {
+    markOnboardingDone();
+    setShowOnboarding(false);
+  };
+
+  
   const containerRef = useRef(null);
   const touchStart = useRef(null);
   const touchLocked = useRef(false);
@@ -500,9 +675,12 @@ export default function App() {
 
   return (
     <div style={{ background: "#F5F2ED", minHeight: "100dvh", display: "flex", justifyContent: "center", alignItems: "flex-start", fontFamily: "sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
+      {showOnboarding && <OnboardingScreen onDone={handleOnboardingDone} />}
 
+      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
       <div style={{ width: "100%", maxWidth: 480, height: "100dvh", background: "#F5F2ED", borderRadius: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+
+        
 
         {/* Header */}
         <div style={{ padding: "18px 24px 0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F5F2ED", flexShrink: 0 }}>

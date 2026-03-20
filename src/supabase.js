@@ -13,3 +13,11 @@ export function getSessionId() {
   }
   return id;
 }
+
+export function hasSeenOnboarding() {
+  return localStorage.getItem("brief_onboarding_done") === "true";
+}
+
+export function markOnboardingDone() {
+  localStorage.setItem("brief_onboarding_done", "true");
+}
