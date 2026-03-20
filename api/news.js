@@ -17,6 +17,10 @@ const NEWSAPI_CATEGORIES = {
   health:     "health",
 };
 
+// In-memory cache
+const cache = {};
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
 async function fetchFromGuardian(category) {
   const section = GUARDIAN_SECTIONS[category] || "news";
   const url = `https://content.guardianapis.com/search?section=${section}&show-fields=thumbnail,trailText,headline&page-size=10&api-key=${GUARDIAN_KEY}`;
@@ -47,14 +51,24 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   const { category } = req.query;
 
+  // Check cache
+  const cacheKey = `news_${category}`;
+  const cached = cache[cacheKey];
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log(`Cache hit: ${cacheKey}`);
+    return res.status(200).json({ status: "ok", articles: cached.articles, source: cached.source, cached: true });
+  }
+
   try {
     const articles = await fetchFromGuardian(category);
-    return res.status(200).json({ status: "ok", articles, source: "guardian" });
+    cache[cacheKey] = { articles, timestamp: Date.now(), source: "guardian" };
+    return res.status(200).json({ status: "ok", articles, source: "guardian", cached: false });
   } catch (guardianErr) {
     console.warn("Guardian failed, falling back to NewsAPI:", guardianErr.message);
     try {
       const articles = await fetchFromNewsAPI(category);
-      return res.status(200).json({ status: "ok", articles, source: "newsapi" });
+      cache[cacheKey] = { articles, timestamp: Date.now(), source: "newsapi" };
+      return res.status(200).json({ status: "ok", articles, source: "newsapi", cached: false });
     } catch (newsErr) {
       return res.status(500).json({ status: "error", message: "Both news sources failed." });
     }
