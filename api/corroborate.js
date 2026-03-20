@@ -2,80 +2,74 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+const cache = {};
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
-  const { title } = req.query;
+  const { title, source } = req.query;
 
-  if (!title) {
-    return res.status(400).json({ error: "No title provided" });
+  if (!title) return res.status(400).json({ error: "No title provided" });
+
+  const cacheKey = `bias_${title.slice(0, 50)}`;
+  const cached = cache[cacheKey];
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return res.status(200).json(cached.data);
   }
 
   try {
-    // Search for the same story across sources
+    // Step 1 — search for corroborating sources
     const keywords = title.split(" ").slice(0, 6).join(" ");
     const newsRes = await fetch(
       `https://newsapi.org/v2/everything?q=${encodeURIComponent(keywords)}&pageSize=15&sortBy=relevancy&apiKey=${process.env.VITE_NEWS_KEY}`
     );
     const newsData = await newsRes.json();
 
-    if (!newsData.articles || newsData.articles.length === 0) {
-      return res.status(200).json({ score: null });
-    }
+    const sources = newsData.articles
+      ? [...new Set(newsData.articles.filter(a => a.source?.name).map(a => a.source.name))].slice(0, 10)
+      : [];
 
-    // Get unique sources
-    const sources = [...new Set(
-      newsData.articles
-        .filter(a => a.source?.name)
-        .map(a => a.source.name)
-    )].slice(0, 10);
+    // Step 2 — ask Claude to classify bias
+    const prompt = sources.length > 0
+      ? `You are a media bias analyst. Given this news article and the sources covering it, return a JSON object with two things:
+1. "lean": the overall political lean of this story's coverage. Must be exactly one of: "Left", "Center-Left", "Center", "Center-Right", "Right"
+2. "counts": how many of the provided sources fall into each lean category
+3. "total": total number of sources
 
-    if (sources.length === 0) {
-      return res.status(200).json({ score: null });
-    }
+Article title: "${title}"
+Primary source: "${source || "Unknown"}"
+Other sources covering this story: ${sources.join(", ")}
 
-    // Ask Claude to classify each source's lean
+Respond ONLY with valid JSON, no explanation:
+{"lean": "Center", "counts": {"Left": 0, "Center-Left": 2, "Center": 3, "Center-Right": 1, "Right": 0}, "total": 6}`
+      : `You are a media bias analyst. Classify the political lean of this news article based on its title and source.
+
+Article title: "${title}"
+Source: "${source || "Unknown"}"
+
+Respond ONLY with valid JSON:
+{"lean": "Center", "counts": {"Left": 0, "Center-Left": 0, "Center": 1, "Center-Right": 0, "Right": 0}, "total": 1}`;
+
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 300,
-      messages: [{
-        role: "user",
-        content: `Classify the political lean of each of these news sources as one of: Left, Center-Left, Center, Center-Right, Right.
-
-Sources: ${sources.join(", ")}
-
-Respond ONLY with a JSON object like this, no explanation:
-{"Source Name": "Left", "Other Source": "Center", ...}`
-      }]
+      max_tokens: 150,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    let leanMap = {};
+    let result;
     try {
-      const text = message.content[0].text.trim();
-      leanMap = JSON.parse(text);
+      result = JSON.parse(message.content[0].text.trim());
     } catch {
-      return res.status(200).json({ score: null });
+      result = { lean: "Center", counts: { Left: 0, "Center-Left": 0, Center: 1, "Center-Right": 0, Right: 0 }, total: sources.length || 1 };
     }
 
-    // Count by lean
-    const counts = { Left: 0, "Center-Left": 0, Center: 0, "Center-Right": 0, Right: 0 };
-    Object.values(leanMap).forEach(lean => {
-      if (counts[lean] !== undefined) counts[lean]++;
-    });
-
-    const total = Object.values(counts).reduce((a, b) => a + b, 0);
-
-    res.status(200).json({
-      score: {
-        total: sources.length,
-        counts,
-        sources,
-        total_classified: total,
-      }
-    });
+    const data = { score: { ...result, sources } };
+    cache[cacheKey] = { data, timestamp: Date.now() };
+    return res.status(200).json(data);
 
   } catch (err) {
-    console.error("Corroborate error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Bias error:", err);
+    return res.status(500).json({ error: err.message });
   }
 }

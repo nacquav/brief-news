@@ -687,19 +687,43 @@ function NewsCard({ item, color, label, category }) {
               <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#D1D5DB", letterSpacing: 1 }}>CHECKING...</span>
             ) : corroboration ? (
               <>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 20 }}>
+                {/* Lean label */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 4,
+                  background: "rgba(0,0,0,0.03)",
+                  border: "1px solid rgba(0,0,0,0.07)",
+                  borderRadius: 20, padding: "2px 8px",
+                }}>
+                  <div style={{
+                    width: 5, height: 5, borderRadius: "50%",
+                    background: {
+                      "Left": "#3B82F6",
+                      "Center-Left": "#60A5FA",
+                      "Center": "#9CA3AF",
+                      "Center-Right": "#F97316",
+                      "Right": "#EF4444",
+                    }[corroboration.lean] || "#9CA3AF",
+                  }}/>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#6B7280", letterSpacing: 0.5 }}>
+                    {corroboration.lean || "Center"}
+                  </span>
+                </div>
+                {/* Mini bars */}
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 16 }}>
                   {LEAN_BARS.map(({ key, color: barColor }) => (
                     <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
                       <div style={{
-                        width: 8,
-                        height: corroboration.counts[key] > 0 ? Math.min(Math.max(corroboration.counts[key] * 4, 3), 16) : 2,
+                        width: 6,
+                        height: corroboration.counts[key] > 0 ? Math.min(Math.max(corroboration.counts[key] * 3, 2), 14) : 2,
                         background: corroboration.counts[key] > 0 ? barColor : "rgba(0,0,0,0.08)",
-                        borderRadius: 2,
+                        borderRadius: 1,
                       }}/>
                     </div>
                   ))}
                 </div>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 7, color: "#9CA3AF", letterSpacing: 0.5 }}>{corroboration.total} SOURCES</span>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 7, color: "#9CA3AF", letterSpacing: 0.5 }}>
+                  {corroboration.total} SOURCES
+                </span>
               </>
             ) : (
               <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#D1D5DB" }}>NO DATA</span>
