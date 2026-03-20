@@ -526,8 +526,105 @@ function ProfilePage() {
   );
 }
 
+
+function BottomSheet({ children, onClose }) {
+  const sheetRef = useRef(null);
+  const dragStart = useRef(null);
+  const [translateY, setTranslateY] = useState(0);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+  }, []);
+
+  const handleTouchStart = (e) => {
+    dragStart.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e) => {
+    if (dragStart.current === null) return;
+    const diff = e.touches[0].clientY - dragStart.current;
+    if (diff > 0) setTranslateY(diff);
+  };
+
+  const handleTouchEnd = () => {
+    if (translateY > 80) {
+      setVisible(false);
+      setTimeout(onClose, 300);
+    } else {
+      setTranslateY(0);
+    }
+    dragStart.current = null;
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={() => { setVisible(false); setTimeout(onClose, 300); }}
+        style={{
+          position: "absolute", inset: 0,
+          background: "rgba(10,12,16,0.4)",
+          opacity: visible ? 1 : 0,
+          transition: "opacity 0.3s ease",
+          zIndex: 10,
+        }}
+      />
+
+      {/* Sheet */}
+      <div
+        ref={sheetRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          position: "absolute",
+          left: 0, right: 0, bottom: 0,
+          background: "#F5F2ED",
+          borderRadius: "20px 20px 0 0",
+          padding: "0 20px 32px",
+          zIndex: 11,
+          transform: `translateY(${visible ? translateY : 100}%)`,
+          transition: translateY > 0 ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+          maxHeight: "82%",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "0 -4px 24px rgba(0,0,0,0.12)",
+        }}
+      >
+        {/* Drag handle */}
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 16px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(0,0,0,0.15)" }}/>
+        </div>
+
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexShrink: 0 }}>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#00C4A8", letterSpacing: 2 }}>⚡ 60s BRIEF</span>
+          <button onClick={() => { setVisible(false); setTimeout(onClose, 300); }}
+            style={{ background: "none", border: "none", fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF", cursor: "pointer", letterSpacing: 1 }}>
+            CLOSE ×
+          </button>
+        </div>
+
+        {/* Scrollable content */}
+        <div
+          onTouchStart={e => e.stopPropagation()}
+          onTouchMove={e => e.stopPropagation()}
+          onTouchEnd={e => e.stopPropagation()}
+          style={{ flex: 1, overflow: "auto" }}
+        >
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+
 // ── NEWS CARD ──
-function NewsCard({ item, color, label, category, onRead }) {
+// ── NEWS CARD ──
+function NewsCard({ item, color, label, category }) {
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -543,9 +640,9 @@ function NewsCard({ item, color, label, category, onRead }) {
   }, [item.title]);
 
   const handleSummary = async () => {
-    if (summary) { setShowSummary(s => !s); return; }
-    setSummaryLoading(true);
     setShowSummary(true);
+    if (summary) return;
+    setSummaryLoading(true);
     if (!hasTracked.current) {
       hasTracked.current = true;
       trackRead(category, corroboration);
@@ -564,8 +661,9 @@ function NewsCard({ item, color, label, category, onRead }) {
       height: "100%", width: "100%",
       display: "flex", flexDirection: "column",
       background: "#F5F2ED", boxSizing: "border-box", overflow: "hidden",
+      position: "relative",
     }}>
-      
+
       {item.urlToImage && (
         <div style={{ width: "100%", height: "160px", flexShrink: 0, overflow: "hidden", background: "#E8E4DD" }}>
           <img
@@ -613,34 +711,10 @@ function NewsCard({ item, color, label, category, onRead }) {
 
         <div style={{ width: 32, height: 2, background: color, borderRadius: 1, marginBottom: 10, flexShrink: 0 }}/>
 
-        <div style={{ flex: 1, overflow: "auto", marginBottom: 12 }}>
-          {showSummary ? (
-            <div 
-              onTouchStart={e => e.stopPropagation()}
-              onTouchEnd={e => e.stopPropagation()}
-              onTouchMove={e => e.stopPropagation()}
-              style={{ background: "rgba(0,196,168,0.06)", border: "1px solid rgba(0,196,168,0.2)", borderRadius: 10, padding: "10px 12px", overflow: "auto", maxHeight: 200 }}
-            >
-
-              {summaryLoading ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: "16px 0" }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#00C4A8" }}/>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#00C4A8", letterSpacing: 1 }}>SUMMARIZING...</span>
-                </div>
-              ) : (
-                <ReactMarkdown components={{
-                  p: ({ children }) => <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#374151", lineHeight: 1.65, margin: "0 0 8px 0" }}>{children}</p>,
-                  strong: ({ children }) => <strong style={{ color: "#0A0C10", fontWeight: 600 }}>{children}</strong>,
-                  ul: ({ children }) => <ul style={{ paddingLeft: 16, margin: "6px 0" }}>{children}</ul>,
-                  li: ({ children }) => <li style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#374151", lineHeight: 1.6, marginBottom: 4 }}>{children}</li>,
-                  h3: ({ children }) => <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#00C4A8", textTransform: "uppercase", marginBottom: 6, marginTop: 8 }}>{children}</div>,
-                }}>{summary}</ReactMarkdown>
-              )}
-            </div>
-          ) : (
-            item.description && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7280", lineHeight: 1.6, margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: item.urlToImage ? 5 : 8, WebkitBoxOrient: "vertical" }}>{item.description}</p>
-            )
+        {/* Description */}
+        <div style={{ flex: 1, overflow: "hidden", marginBottom: 12 }}>
+          {item.description && (
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7280", lineHeight: 1.6, margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: item.urlToImage ? 5 : 8, WebkitBoxOrient: "vertical" }}>{item.description}</p>
           )}
         </div>
 
@@ -650,28 +724,44 @@ function NewsCard({ item, color, label, category, onRead }) {
           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF" }}>{timeAgo(item.publishedAt)}</span>
         </div>
 
+        {/* Buttons */}
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <button onClick={handleSummary} style={{ flex: 1, padding: "11px", background: showSummary ? "rgba(0,196,168,0.1)" : "rgba(0,0,0,0.04)", border: showSummary ? "1px solid rgba(0,196,168,0.3)" : "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1, color: showSummary ? "#00C4A8" : "#6B7280", cursor: "pointer", transition: "all 0.2s" }}>
-            {showSummary ? "← ORIGINAL" : "⚡ 60s BRIEF"}
+          <button onClick={handleSummary} style={{ flex: 1, padding: "11px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1, color: "#6B7280", cursor: "pointer", transition: "all 0.2s" }}>
+            ⚡ 60s BRIEF
           </button>
-          <a href={item.url}
-            target="_blank"
-            rel="noreferrer"
+          <a href={item.url} target="_blank" rel="noreferrer"
             onClick={() => {
-              if (!hasTracked.current) {
-                hasTracked.current = true;
-                trackRead(category, corroboration);
-              }
+              if (!hasTracked.current) { hasTracked.current = true; trackRead(category, corroboration); }
             }}
-            style={{ flex: 2, display: "block", textAlign: "center", padding: "11px", background: "#0A0C10", color: "#F5F2ED", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, textDecoration: "none", letterSpacing: "0.3px" }}
-          >
+            style={{ flex: 2, display: "block", textAlign: "center", padding: "11px", background: "#0A0C10", color: "#F5F2ED", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, textDecoration: "none", letterSpacing: "0.3px" }}>
             Read Full Story →
           </a>
         </div>
       </div>
+
+      {/* Bottom sheet */}
+      {showSummary && (
+        <BottomSheet onClose={() => setShowSummary(false)}>
+          {summaryLoading ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: "24px 0" }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#00C4A8" }}/>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#00C4A8", letterSpacing: 1 }}>SUMMARIZING...</span>
+            </div>
+          ) : (
+            <ReactMarkdown components={{
+              p: ({ children }) => <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#374151", lineHeight: 1.7, margin: "0 0 12px 0" }}>{children}</p>,
+              strong: ({ children }) => <strong style={{ color: "#0A0C10", fontWeight: 600 }}>{children}</strong>,
+              ul: ({ children }) => <ul style={{ paddingLeft: 16, margin: "6px 0" }}>{children}</ul>,
+              li: ({ children }) => <li style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#374151", lineHeight: 1.65, marginBottom: 6 }}>{children}</li>,
+              h3: ({ children }) => <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#00C4A8", textTransform: "uppercase", marginBottom: 6, marginTop: 10 }}>{children}</div>,
+            }}>{summary}</ReactMarkdown>
+          )}
+        </BottomSheet>
+      )}
     </div>
   );
 }
+
 
 // ── MAIN APP ──
 export default function App() {
