@@ -623,7 +623,6 @@ function BottomSheet({ children, onClose }) {
 
 
 // ── NEWS CARD ──
-// ── NEWS CARD ──
 function NewsCard({ item, color, label, category }) {
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -656,6 +655,14 @@ function NewsCard({ item, color, label, category }) {
     setSummaryLoading(false);
   };
 
+  const LEAN_COLORS = {
+    "Left": "#3B82F6",
+    "Center-Left": "#60A5FA",
+    "Center": "#9CA3AF",
+    "Center-Right": "#F97316",
+    "Right": "#EF4444",
+  };
+
   return (
     <div style={{
       height: "100%", width: "100%",
@@ -664,6 +671,7 @@ function NewsCard({ item, color, label, category }) {
       position: "relative",
     }}>
 
+      {/* Image */}
       {item.urlToImage && (
         <div style={{ width: "100%", height: "160px", flexShrink: 0, overflow: "hidden", background: "#E8E4DD" }}>
           <img
@@ -676,85 +684,87 @@ function NewsCard({ item, color, label, category }) {
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "16px 20px 14px", overflow: "hidden" }}>
 
-        {/* Category + Corroboration */}
+        {/* Category left — Source right */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, boxShadow: `0 0 6px ${color}` }}/>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 2.5, color, fontWeight: 500 }}>{label}</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-            {corrobLoading ? (
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#D1D5DB", letterSpacing: 1 }}>CHECKING...</span>
-            ) : corroboration ? (
-              <>
-                {/* Lean label */}
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 4,
-                  background: "rgba(0,0,0,0.03)",
-                  border: "1px solid rgba(0,0,0,0.07)",
-                  borderRadius: 20, padding: "2px 8px",
-                }}>
-                  <div style={{
-                    width: 5, height: 5, borderRadius: "50%",
-                    background: {
-                      "Left": "#3B82F6",
-                      "Center-Left": "#60A5FA",
-                      "Center": "#9CA3AF",
-                      "Center-Right": "#F97316",
-                      "Right": "#EF4444",
-                    }[corroboration.lean] || "#9CA3AF",
-                  }}/>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#6B7280", letterSpacing: 0.5 }}>
-                    {corroboration.lean || "Center"}
-                  </span>
-                </div>
-                {/* Mini bars */}
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 16 }}>
-                  {LEAN_BARS.map(({ key, color: barColor }) => (
-                    <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-                      <div style={{
-                        width: 6,
-                        height: corroboration.counts[key] > 0 ? Math.min(Math.max(corroboration.counts[key] * 3, 2), 14) : 2,
-                        background: corroboration.counts[key] > 0 ? barColor : "rgba(0,0,0,0.08)",
-                        borderRadius: 1,
-                      }}/>
-                    </div>
-                  ))}
-                </div>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 7, color: "#9CA3AF", letterSpacing: 0.5 }}>
-                  {corroboration.total} SOURCES
-                </span>
-              </>
-            ) : (
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#D1D5DB" }}>NO DATA</span>
-            )}
-          </div>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: "#0A0C10" }}>
+            {item.source?.name}
+          </span>
         </div>
 
-        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: item.urlToImage ? 17 : 22, fontWeight: 400, color: "#0A0C10", lineHeight: 1.25, margin: "0 0 8px 0", letterSpacing: "-0.3px" }}>{item.title}</h2>
+        {/* Headline */}
+        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: item.urlToImage ? 17 : 22, fontWeight: 400, color: "#0A0C10", lineHeight: 1.25, margin: "0 0 8px 0", letterSpacing: "-0.3px" }}>
+          {item.title}
+        </h2>
 
+        {/* Accent rule */}
         <div style={{ width: 32, height: 2, background: color, borderRadius: 1, marginBottom: 10, flexShrink: 0 }}/>
 
         {/* Description */}
         <div style={{ flex: 1, overflow: "hidden", marginBottom: 12 }}>
           {item.description && (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7280", lineHeight: 1.6, margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: item.urlToImage ? 5 : 8, WebkitBoxOrient: "vertical" }}>{item.description}</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7280", lineHeight: 1.6, margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: item.urlToImage ? 5 : 8, WebkitBoxOrient: "vertical" }}>
+              {item.description}
+            </p>
           )}
         </div>
 
-        {/* Source + time */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, marginBottom: 12, borderTop: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: "#0A0C10" }}>{item.source?.name}</span>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF" }}>{timeAgo(item.publishedAt)}</span>
+        {/* Time + Bias pill + Bar chart */}
+        <div style={{ marginBottom: 12, flexShrink: 0 }}>
+
+          {/* Time + lean pill row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF" }}>
+              {timeAgo(item.publishedAt)}
+            </span>
+            {corrobLoading ? (
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#D1D5DB", letterSpacing: 1 }}>CHECKING...</span>
+            ) : corroboration ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 20, padding: "3px 10px" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: LEAN_COLORS[corroboration.lean] || "#9CA3AF" }}/>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#6B7280", letterSpacing: 0.5 }}>
+                  {corroboration.lean || "Center"}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Full width bar chart */}
+          {!corrobLoading && corroboration && (
+            <>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 32, padding: "0 2px" }}>
+                {LEAN_BARS.map(({ key, color: barColor }) => (
+                  <div key={key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", gap: 3 }}>
+                    <div style={{
+                      width: "100%",
+                      height: corroboration.counts[key] > 0 ? Math.min(Math.max(corroboration.counts[key] * 5, 4), 26) : 3,
+                      background: corroboration.counts[key] > 0 ? barColor : "rgba(0,0,0,0.06)",
+                      borderRadius: "2px 2px 0 0",
+                    }}/>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 7, color: corroboration.counts[key] > 0 ? barColor : "rgba(0,0,0,0.2)" }}>
+                      {key === "Center-Left" ? "C-L" : key === "Center-Right" ? "C-R" : key.slice(0, 1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ textAlign: "right", marginTop: 3 }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 7, color: "#C4C4C4", letterSpacing: 0.5 }}>
+                  {corroboration.total} SOURCES
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
-{/* Buttons */}
-<div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <button onClick={handleSummary} style={{ flex: 1, padding: "11px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1, color: "#6B7280", cursor: "pointer", transition: "all 0.2s" }}>
             ⚡ 60s BRIEF
           </button>
           <a href={item.url} target="_blank" rel="noreferrer"
-          
             onClick={() => {
               if (!hasTracked.current) { hasTracked.current = true; trackRead(category, corroboration); }
             }}
@@ -764,11 +774,7 @@ function NewsCard({ item, color, label, category }) {
           <button
             onClick={() => {
               if (navigator.share) {
-                navigator.share({
-                  title: item.title,
-                  text: `${item.title}\n\nvia BRIEF.`,
-                  url: item.url,
-                });
+                navigator.share({ title: item.title, text: `${item.title}\n\nvia BRIEF.`, url: item.url });
               } else {
                 navigator.clipboard.writeText(`${item.title}\n\n${item.url}\n\nvia BRIEF.`);
                 alert("Link copied to clipboard!");
@@ -777,7 +783,7 @@ function NewsCard({ item, color, label, category }) {
             style={{ padding: "11px 14px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             ↗
-            </button>
+          </button>
         </div>
       </div>
 
@@ -803,6 +809,7 @@ function NewsCard({ item, color, label, category }) {
     </div>
   );
 }
+
 
 
 // ── MAIN APP ──
