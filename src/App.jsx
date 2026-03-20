@@ -776,7 +776,7 @@ function NewsCard({ item, color, label, category }) {
             }}
             style={{ padding: "11px 14px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            ↗ Share
+            ↗
             </button>
         </div>
       </div>
