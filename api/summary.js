@@ -40,8 +40,9 @@ export default async function handler(req, res) {
           - (Critical) Final line: one neutral sentence on broader context — must add new information, not restate what was already said. Format the final line in bold.
           - Avoid repeating the same proper nouns or facts across points
 
-          
           Target: 60 seconds to read aloud. Around 100 words.
+          
+          If the article content is too short, incomplete, or unclear to summarize properly, respond with exactly: "AI Summary unavailable — article content is too limited."
 
           Article: ${articleText}
 

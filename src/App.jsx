@@ -649,9 +649,9 @@ function NewsCard({ item, color, label, category }) {
     }
     try {
       const result = await fetchSummary(item.title, item.description, item.content);
-      setSummary(result || "Unable to generate summary for this article.");
+      setSummary(result || "Summary unavailable for this article.");
     } catch (err) {
-      setSummary("Unable to generate summary for this article.");
+      setSummary("Summary unavailable for this article.");
     }
     setSummaryLoading(false);
   };
@@ -836,7 +836,12 @@ export default function App() {
       .then(r => r.json())
       .then(data => {
         if (data.status !== "ok") throw new Error(data.message);
-        setArticles(data.articles.filter(a => a.title && a.title !== "[Removed]" && a.urlToImage))
+        setArticles(data.articles.filter(a => {
+          if (!a.title || a.title === "[Removed]" || !a.urlToImage) return false;
+          if (!a.description || a.description.length < 20) return false;
+          if (/<[^>]*>/.test(a.description)) return false;
+          return true;
+        }))
         setLoading(false);
       })
       .catch(err => { setError(err.message); setLoading(false); });
