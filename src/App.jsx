@@ -748,12 +748,30 @@ function NewsCard({ item, color, label, category }) {
           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF" }}>{timeAgo(item.publishedAt)}</span>
         </div>
 
-        {/* Buttons */}
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+{/* Buttons */}
+<div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <button onClick={handleSummary} style={{ flex: 1, padding: "11px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1, color: "#6B7280", cursor: "pointer", transition: "all 0.2s" }}>
             ⚡ 60s BRIEF
           </button>
+          <button
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: item.title,
+                  text: `${item.title}\n\nvia BRIEF.`,
+                  url: item.url,
+                });
+              } else {
+                navigator.clipboard.writeText(`${item.title}\n\n${item.url}\n\nvia BRIEF.`);
+                alert("Link copied to clipboard!");
+              }
+            }}
+            style={{ padding: "11px 14px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            ↗
+          </button>
           <a href={item.url} target="_blank" rel="noreferrer"
+          
             onClick={() => {
               if (!hasTracked.current) { hasTracked.current = true; trackRead(category, corroboration); }
             }}
