@@ -761,14 +761,14 @@ function NewsCard({ item, color, label, category }) {
 
         {/* Buttons */}
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <button onClick={handleSummary} style={{ flex: 1, padding: "11px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1, color: "#6B7280", cursor: "pointer", transition: "all 0.2s" }}>
-            ⚡ 60s BRIEF
+          <button onClick={handleSummary} style={{ flex: 1, padding: "9px 8px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1, color: "#6B7280", cursor: "pointer", transition: "all 0.2s", lineHeight: 1.3 }}>
+            ⚡ AI BRIEF
           </button>
           <a href={item.url} target="_blank" rel="noreferrer"
             onClick={() => {
               if (!hasTracked.current) { hasTracked.current = true; trackRead(category, corroboration); }
             }}
-            style={{ flex: 2, display: "block", textAlign: "center", padding: "11px", background: "#0A0C10", color: "#F5F2ED", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, textDecoration: "none", letterSpacing: "0.3px" }}>
+            style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center", padding: "9px", background: "#0A0C10", color: "#F5F2ED", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, textDecoration: "none", letterSpacing: "0.3px" }}>
             Read Full Story →
           </a>
           <button
@@ -780,7 +780,7 @@ function NewsCard({ item, color, label, category }) {
                 alert("Link copied to clipboard!");
               }
             }}
-            style={{ padding: "11px 14px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ padding: "9px 13px", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             ↗
           </button>
