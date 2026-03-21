@@ -5,31 +5,68 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const cache = { data: null, timestamp: 0 };
 const CACHE_TTL = 20 * 60 * 1000;
 
-async function fetchTrendingTerms() {
-  try {
-    const res = await fetch(
-      "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US",
-      { headers: { "User-Agent": "Mozilla/5.0" } }
-    );
-    const xml = await res.text();
-    const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
-    let match;
-    while ((match = itemRegex.exec(xml)) !== null) {
-      const item = match[1];
-      const titleMatch = item.match(/<title><!\[CDATA\[([^\]]+)\]\]><\/title>|<title>([^<]+)<\/title>/);
-      const trafficMatch = item.match(/<ht:approx_traffic>([^<]+)<\/ht:approx_traffic>/);
-      if (titleMatch) {
-        const term = (titleMatch[1] || titleMatch[2] || "").trim();
-        const traffic = trafficMatch ? trafficMatch[1].replace(/[^0-9]/g, "") : "0";
-        if (term) items.push({ term, traffic: parseInt(traffic) || 0 });
-      }
+async function fetchGoogleTrends() {
+  const res = await fetch(
+    "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US",
+    { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" } }
+  );
+  if (!res.ok) throw new Error(`Google Trends status ${res.status}`);
+  const xml = await res.text();
+  const items = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+  let match;
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const item = match[1];
+    const titleMatch = item.match(/<title><!\[CDATA\[([^\]]+)\]\]><\/title>|<title>([^<]+)<\/title>/);
+    const trafficMatch = item.match(/<ht:approx_traffic>([^<]+)<\/ht:approx_traffic>/);
+    if (titleMatch) {
+      const term = (titleMatch[1] || titleMatch[2] || "").trim();
+      const traffic = trafficMatch ? parseInt(trafficMatch[1].replace(/[^0-9]/g, "")) || 0 : 0;
+      if (term) items.push({ term, traffic, source: "Google Trends" });
     }
-    return items.slice(0, 8);
-  } catch (err) {
-    console.error("Google Trends fetch error:", err);
-    return [];
   }
+  if (items.length === 0) throw new Error("No trends parsed");
+  return items.slice(0, 8);
+}
+
+async function fetchRedditToken() {
+  const credentials = Buffer.from(
+    `${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`
+  ).toString("base64");
+  const res = await fetch("https://www.reddit.com/api/v1/access_token", {
+    method: "POST",
+    headers: {
+      "Authorization": `Basic ${credentials}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "BriefApp/1.0",
+    },
+    body: "grant_type=client_credentials",
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error("Reddit auth failed");
+  return data.access_token;
+}
+
+async function fetchRedditTrending() {
+  const token = await fetchRedditToken();
+  const res = await fetch("https://oauth.reddit.com/r/all/rising?limit=10", {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "User-Agent": "BriefApp/1.0",
+    },
+  });
+  if (!res.ok) throw new Error(`Reddit status ${res.status}`);
+  const data = await res.json();
+  return data.data.children
+    .map(p => p.data)
+    .filter(p => p.title && p.ups > 100)
+    .map((p, i) => ({
+      term: p.title.slice(0, 80),
+      traffic: p.ups + p.num_comments * 10,
+      source: `r/${p.subreddit}`,
+      crossSources: ["Reddit", `r/${p.subreddit}`, "X / Twitter"],
+    }))
+    .slice(0, 8);
 }
 
 async function generateBrief(term) {
@@ -38,28 +75,28 @@ async function generateBrief(term) {
     max_tokens: 200,
     messages: [{
       role: "user",
-      content: `You are a media analyst for BRIEF., a neutral news app. In 3-4 sentences, explain what "${term}" is, why it is currently spreading online, and whether it represents a substantive news story or a short-lived viral moment. Be concise and neutral — no editorializing.
+      content: `You are a media analyst for BRIEF., a neutral news app. In 3-4 sentences, explain what "${term}" is, why it is currently spreading online, and whether it represents a substantive news story or a short-lived viral moment. Be concise and neutral.
 
-End your response with exactly one word on a new line — either Signal, Mixed, or Noise — to rate its news value:
-- Signal = real story with lasting significance
+End your response with exactly one word on a new line:
+- Substance = real story with lasting significance
 - Mixed = real story but inflated or distorted online
-- Noise = viral moment with low news substance`
-    }]
+- Noise = viral moment with low news substance
+
+Write only the brief and the final word rating.`,
+    }],
   });
 
   const text = message.content[0].text.trim();
   const lines = text.split("\n").filter(l => l.trim());
   const lastWord = lines[lines.length - 1].trim();
-  const noiseMap = { "Signal": "signal", "Mixed": "high", "Noise": "noise" };
+  const noiseMap = { "Substance": "signal", "Mixed": "high", "Noise": "noise" };
   const noiseRating = noiseMap[lastWord] || "high";
   const brief = lines.slice(0, -1).join(" ").trim();
-
   return { brief, noiseRating };
 }
 
-function timeAgo(ms) {
-  const diff = Date.now() - ms;
-  const mins = Math.floor(diff / 60000);
+function randomTimeAgo() {
+  const mins = Math.floor(Math.random() * 180);
   if (mins < 60) return `${mins}m ago`;
   return `${Math.floor(mins / 60)}h ago`;
 }
@@ -71,43 +108,51 @@ export default async function handler(req, res) {
     return res.status(200).json({ trends: cache.data, cached: true });
   }
 
-  try {
-    const terms = await fetchTrendingTerms();
+  let terms = [];
+  let dataSource = "google";
 
-    if (terms.length === 0) {
+  // Try Google Trends first
+  try {
+    terms = await fetchGoogleTrends();
+    dataSource = "google";
+    console.log("Using Google Trends");
+  } catch (googleErr) {
+    console.warn("Google Trends blocked, trying Reddit:", googleErr.message);
+    // Fall back to Reddit
+    try {
+      terms = await fetchRedditTrending();
+      dataSource = "reddit";
+      console.log("Using Reddit trending");
+    } catch (redditErr) {
+      console.error("Both sources failed:", redditErr.message);
       return res.status(200).json({ trends: [], cached: false });
     }
-
-    const maxTraffic = Math.max(...terms.map(t => t.traffic), 1);
-
-    const trends = await Promise.all(
-      terms.slice(0, 6).map(async ({ term, traffic }, i) => {
-        try {
-          const { brief, noiseRating } = await generateBrief(term);
-          const spike = Math.round((traffic / maxTraffic) * 100);
-          return {
-            id: i + 1,
-            term,
-            spike: Math.max(spike, 20),
-            brief,
-            noiseRating,
-            timeAgo: timeAgo(Date.now() - Math.random() * 3 * 60 * 60 * 1000),
-            crossSources: ["Google Trends", "X / Twitter", "Reddit"],
-          };
-        } catch {
-          return null;
-        }
-      })
-    );
-
-    const filtered = trends.filter(Boolean);
-    cache.data = filtered;
-    cache.timestamp = Date.now();
-
-    return res.status(200).json({ trends: filtered, cached: false });
-
-  } catch (err) {
-    console.error("Circulating error:", err);
-    return res.status(500).json({ error: err.message });
   }
+
+  const maxTraffic = Math.max(...terms.map(t => t.traffic), 1);
+
+  const trends = (await Promise.all(
+    terms.slice(0, 6).map(async ({ term, traffic, source, crossSources }, i) => {
+      try {
+        const { brief, noiseRating } = await generateBrief(term);
+        return {
+          id: i + 1,
+          term,
+          spike: Math.max(Math.round((traffic / maxTraffic) * 100), 20),
+          brief,
+          noiseRating,
+          timeAgo: randomTimeAgo(),
+          crossSources: crossSources || [
+            dataSource === "google" ? "Google Trends" : "Reddit",
+            "X / Twitter",
+            source || "Web",
+          ],
+        };
+      } catch { return null; }
+    })
+  )).filter(Boolean);
+
+  cache.data = trends;
+  cache.timestamp = Date.now();
+  return res.status(200).json({ trends, cached: false });
 }
