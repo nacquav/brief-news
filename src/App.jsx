@@ -741,7 +741,7 @@ function CirculatingScreen() {
             What's Circulating
           </div>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#9CA3AF", margin: 0, lineHeight: 1.5 }}>
-            Viral signals decoded. No scroll required.
+            Viral signals decoded. No doom scrolling required.
           </p>
         </div>
         <button
