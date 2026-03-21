@@ -621,6 +621,190 @@ function BottomSheet({ children, onClose }) {
   );
 }
 
+// ── WHAT'S CIRCULATING ──
+const NOISE_CONFIG = {
+  signal: { label: "Signal", color: "#00C4A8", desc: "A real story with legs." },
+  high:   { label: "Mixed",  color: "#F59E0B", desc: "Real story, inflated noise." },
+  noise:  { label: "Noise",  color: "#EF4444", desc: "Viral moment, low substance." },
+};
+
+function NoiseBar({ rating }) {
+  const cfg = NOISE_CONFIG[rating] || NOISE_CONFIG.high;
+  const width = rating === "signal" ? "20%" : rating === "high" ? "60%" : "95%";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
+      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#9CA3AF", textTransform: "uppercase", minWidth: 70 }}>Noise level</span>
+      <div style={{ flex: 1, height: 3, background: "rgba(0,0,0,0.08)", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ width, height: "100%", background: cfg.color, borderRadius: 2, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)" }}/>
+      </div>
+      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1, color: cfg.color, minWidth: 38, textAlign: "right" }}>{cfg.label}</span>
+    </div>
+  );
+}
+
+function TrendCard({ trend, index }) {
+  const [expanded, setExpanded] = useState(false);
+  const cfg = NOISE_CONFIG[trend.noiseRating] || NOISE_CONFIG.high;
+
+  return (
+    <div
+      onClick={() => setExpanded(!expanded)}
+      style={{
+        background: "white",
+        border: `1px solid ${expanded ? cfg.color + "44" : "rgba(0,0,0,0.07)"}`,
+        borderLeft: `3px solid ${expanded ? cfg.color : "rgba(0,0,0,0.08)"}`,
+        borderRadius: 12,
+        padding: "16px 18px",
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+        marginBottom: 10,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, letterSpacing: 2, color: "#9CA3AF", textTransform: "uppercase" }}>Circulating</span>
+            <span style={{ color: "rgba(0,0,0,0.2)", fontSize: 10 }}>·</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: "#9CA3AF" }}>{trend.timeAgo}</span>
+          </div>
+
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 17, color: "#0A0C10", lineHeight: 1.25, marginBottom: 10, letterSpacing: "-0.01em" }}>
+            {trend.term}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            {/* Spike indicator */}
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                <polyline points="1,11 4,7 7,9 10,3 13,5" stroke="#00C4A8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#00C4A8", letterSpacing: 1 }}>{trend.spike}% spike</span>
+            </div>
+            <span style={{ color: "rgba(0,0,0,0.15)", fontSize: 10 }}>·</span>
+            {trend.crossSources.map(s => (
+              <span key={s} style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, letterSpacing: 0.5, color: "#6B7280", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 4, padding: "2px 6px", whiteSpace: "nowrap" }}>{s}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Expand button */}
+        <div style={{ width: 26, height: 26, borderRadius: "50%", border: "1px solid rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "transform 0.2s ease", transform: expanded ? "rotate(45deg)" : "rotate(0deg)" }}>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <line x1="5" y1="1" x2="5" y2="9" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round"/>
+            <line x1="1" y1="5" x2="9" y2="5" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, lineHeight: 1.7, color: "#374151", margin: "0 0 10px 0" }}>
+            {trend.brief}
+          </p>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: cfg.color, letterSpacing: 1, opacity: 0.85 }}>
+            {cfg.desc}
+          </div>
+          <NoiseBar rating={trend.noiseRating} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CirculatingScreen() {
+  const [trends, setTrends] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(null);
+
+  const fetchTrends = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/circulating");
+      const data = await res.json();
+      setTrends(data.trends || []);
+      setLastRefresh(new Date());
+    } catch (err) {
+      console.error("Circulating fetch error:", err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchTrends(); }, []);
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", background: "#F5F2ED", padding: "20px 20px 40px" }}>
+
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
+        <div>
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#0A0C10", letterSpacing: "-0.02em", marginBottom: 4 }}>
+            What's Circulating
+          </div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#9CA3AF", margin: 0, lineHeight: 1.5 }}>
+            Viral signals decoded. No scroll required.
+          </p>
+        </div>
+        <button
+          onClick={fetchTrends}
+          style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, padding: "7px 12px", fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: 1, color: "#6B7280", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase" }}
+        >
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+            <path d="M8 4.5A3.5 3.5 0 1 1 4.5 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            <polyline points="4.5,1 6.5,1 6.5,3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
+        {Object.entries(NOISE_CONFIG).map(([key, cfg]) => (
+          <div key={key} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color }}/>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#6B7280", letterSpacing: 1 }}>{cfg.label}</span>
+          </div>
+        ))}
+        {lastRefresh && (
+          <span style={{ marginLeft: "auto", fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#D1D5DB" }}>
+            {lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        )}
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ background: "white", borderRadius: 12, padding: "16px 18px", border: "1px solid rgba(0,0,0,0.07)" }}>
+              <div style={{ height: 10, background: "rgba(0,0,0,0.06)", borderRadius: 4, width: "40%", marginBottom: 10 }}/>
+              <div style={{ height: 16, background: "rgba(0,0,0,0.06)", borderRadius: 4, width: "75%", marginBottom: 8 }}/>
+              <div style={{ height: 10, background: "rgba(0,0,0,0.04)", borderRadius: 4, width: "55%" }}/>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Trends */}
+      {!loading && trends.length === 0 && (
+        <div style={{ textAlign: "center", paddingTop: 40 }}>
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: "#0A0C10", marginBottom: 8 }}>Nothing circulating yet</div>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#9CA3AF" }}>Tap refresh to check trending signals.</div>
+        </div>
+      )}
+
+      {!loading && trends.map((trend, i) => (
+        <TrendCard key={trend.id} trend={trend} index={i} />
+      ))}
+
+      {!loading && trends.length > 0 && (
+        <p style={{ marginTop: 24, fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#D1D5DB", lineHeight: 1.6, letterSpacing: 1, textAlign: "center" }}>
+          Signals from Google Trends · X · Reddit<br/>Briefs generated by AI · Verify primary sources
+        </p>
+      )}
+    </div>
+  );
+}
+
 
 // ── NEWS CARD ──
 function NewsCard({ item, color, label, category }) {
@@ -821,6 +1005,7 @@ export default function App() {
   const [current, setCurrent] = useState(0);
   const [screen, setScreen] = useState("feed");
   const [showOnboarding, setShowOnboarding] = useState(!hasSeenOnboarding());
+  const [showCirculating, setShowCirculating] = useState(false);
 
   const handleOnboardingDone = () => {
     markOnboardingDone();
@@ -898,17 +1083,23 @@ export default function App() {
         {screen === "feed" && (
           <div style={{ display: "flex", padding: "10px 16px 0", borderBottom: "1px solid rgba(0,0,0,0.08)", overflowX: "auto", scrollbarWidth: "none", background: "#F5F2ED", flexShrink: 0 }}>
             {TABS.map(t => (
-              <button key={t.label} onClick={() => setActiveTab(t)} style={{ background: "none", border: "none", color: activeTab.label === t.label ? "#0A0C10" : "#9CA3AF", fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1.5, padding: "6px 10px 10px", borderBottom: activeTab.label === t.label ? `2px solid ${CATEGORY_COLORS[t.category]}` : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap", fontWeight: activeTab.label === t.label ? 500 : 400, transition: "all 0.2s" }}>
+              <button key={t.label} onClick={() => { setActiveTab(t); setShowCirculating(false); }} style={{ background: "none", border: "none", color: activeTab.label === t.label && !showCirculating ? "#0A0C10" : "#9CA3AF", fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1.5, padding: "6px 10px 10px", borderBottom: activeTab.label === t.label && !showCirculating ? `2px solid ${CATEGORY_COLORS[t.category]}` : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap", fontWeight: activeTab.label === t.label && !showCirculating ? 500 : 400, transition: "all 0.2s" }}>
                 {t.label.toUpperCase()}
               </button>
             ))}
+            <button onClick={() => setShowCirculating(true)} style={{ background: "none", border: "none", color: showCirculating ? "#00C4A8" : "#9CA3AF", fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1.5, padding: "6px 10px 10px", borderBottom: showCirculating ? "2px solid #00C4A8" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap", fontWeight: showCirculating ? 500 : 400, transition: "all 0.2s" }}>
+              CIRCULATING
+            </button>
           </div>
         )}
 
         {/* Screen content */}
         {screen === "profile" ? (
           <ProfilePage />
+        ) : showCirculating ? (
+          <CirculatingScreen />
         ) : (
+
           <div ref={containerRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ flex: 1, overflow: "hidden", position: "relative", background: "#F5F2ED" }}>
             {loading && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#9CA3AF", letterSpacing: 2 }}>LOADING...</div>
