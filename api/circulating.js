@@ -129,7 +129,7 @@ export default async function handler(req, res) {
   }
 
   let terms = [];
-  let dataSource = "hackernews";
+  let dataSource = "viral";
 
   // Try Google Trends first
   try {
@@ -138,11 +138,11 @@ export default async function handler(req, res) {
     console.log("Using Google Trends");
   } catch (googleErr) {
     console.warn("Google Trends failed:", googleErr.message);
-    // Fall back to HackerNews — always works, no auth
+    // Fall back to viral — always works, no auth
     try {
-      terms = await fetchViralContentfetchHackerNewsTrending();
-      dataSource = "hackernews";
-      console.log("Using HackerNews trending");
+      terms = await fetchViralContent();
+      dataSource = "viral";
+      console.log("Using viral trending");
     } catch (hnErr) {
       console.error("All sources failed:", hnErr.message);
       return res.status(200).json({ trends: [], cached: false });
