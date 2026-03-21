@@ -43,11 +43,12 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 1440)}d ago`;
 }
 
-async function fetchSummary(title, description, content) {
+async function fetchSummary(title, description, content, url) {
   const params = new URLSearchParams();
   if (title) params.append("title", title);
   if (description) params.append("description", description);
   if (content) params.append("content", content);
+  if (url) params.append("url", url);
   const res = await fetch(`/api/summary?${params.toString()}`);
   const data = await res.json();
   return data.summary || null;
@@ -647,7 +648,7 @@ function NewsCard({ item, color, label, category }) {
       trackRead(category, corroboration);
     }
     try {
-      const result = await fetchSummary(item.title, item.description, item.content);
+      const result = await fetchSummary(item.title, item.description, item.content, item.url);
       setSummary(result || "Summary unavailable for this article.");
     } catch (err) {
       setSummary("Summary unavailable for this article.");
