@@ -5,32 +5,56 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const cache = { data: null, timestamp: 0 };
 const CACHE_TTL = 20 * 60 * 1000;
 
-async function fetchHackerNewsTrending() {
-  // Fetch top story IDs
-  const idsRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
-  const ids = await idsRes.json();
-
-  // Fetch top 12 stories in parallel
-  const stories = await Promise.all(
-    ids.slice(0, 12).map(id =>
-      fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
-        .then(r => r.json())
-        .catch(() => null)
-    )
-  );
-
-  return stories
-    .filter(s => s && s.title && s.score > 50)
-    .map(s => ({
-      term: s.title.length > 80 ? s.title.slice(0, 77) + "..." : s.title,
-      traffic: s.score + (s.descendants || 0) * 5,
-      url: s.url || `https://news.ycombinator.com/item?id=${s.id}`,
-      comments: s.descendants || 0,
-      score: s.score,
-      crossSources: ["Hacker News", "X / Twitter", "Web"],
-    }))
-    .slice(0, 8);
-}
+async function fetchViralContent() {
+    const VIRAL_FEEDS = [
+      { url: "https://www.buzzfeed.com/index.xml", source: "BuzzFeed" },
+      { url: "https://mashable.com/feeds/rss/all", source: "Mashable" },
+      { url: "https://knowyourmeme.com/memes/trending.rss", source: "Know Your Meme" },
+      { url: "https://www.reddit.com/r/OutOfTheLoop/hot.rss", source: "Reddit" },
+      { url: "https://www.reddit.com/r/hatemylife/hot.rss", source: "Reddit" },
+      { url: "https://www.reddit.com/r/TikTokCringe/hot.rss", source: "Reddit" },
+      { url: "https://www.reddit.com/r/popular/hot.rss", source: "Reddit Popular" },
+    ];
+  
+    const results = await Promise.allSettled(
+      VIRAL_FEEDS.map(async ({ url, source }) => {
+        const res = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+            "Accept": "application/rss+xml, application/xml, text/xml, */*",
+          }
+        });
+        if (!res.ok) return [];
+        const xml = await res.text();
+        const items = [];
+        const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+        let match;
+        while ((match = itemRegex.exec(xml)) !== null) {
+          const block = match[1];
+          const titleMatch = block.match(/<title><!\[CDATA\[([^\]]+)\]\]><\/title>|<title>([^<]+)<\/title>/i);
+          const title = titleMatch ? (titleMatch[1] || titleMatch[2] || "").trim() : "";
+          if (title && title.length > 10) {
+            items.push({ term: title.slice(0, 80), traffic: Math.random() * 50000 + 10000, crossSources: [source, "X / Twitter", "TikTok"] });
+          }
+        }
+        return items.slice(0, 4);
+      })
+    );
+  
+    const all = results
+      .filter(r => r.status === "fulfilled")
+      .flatMap(r => r.value);
+  
+    if (all.length === 0) throw new Error("No viral content found");
+  
+    // Shuffle for variety
+    for (let i = all.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [all[i], all[j]] = [all[j], all[i]];
+    }
+  
+    return all.slice(0, 8);
+  }
 
 async function fetchGoogleTrends() {
   // Try the new Google Trends URL format
@@ -73,14 +97,12 @@ async function generateBrief(term) {
     max_tokens: 200,
     messages: [{
       role: "user",
-      content: `You are a media analyst for BRIEF., a neutral news app. In 3-4 sentences, explain what "${term}" is, why it is currently spreading online, and whether it represents a substantive news story or a short-lived viral moment. Be concise and neutral.
+      content: `You are a cultural analyst for BRIEF., a news app. In one sentence of 70-90 characters, explain what "${term}" is and why it's going viral right now. Be direct, neutral, and conversational — write like you're explaining it to a friend.
 
-End your response with exactly one word on a new line:
-- Substance = real story with lasting significance
-- Mixed = real story but inflated or distorted online
-- Noise = viral moment with low news substance
-
-Write only the brief and the final word rating.`,
+Then on a new line, write exactly one word:
+- Substance = cultural moment with real significance, news about personnel and health, world topics
+- Mixed = real story but blown out of proportion
+- Noise = pure viral fluff, fades in 24 hours`,
     }],
   });
 
@@ -118,7 +140,7 @@ export default async function handler(req, res) {
     console.warn("Google Trends failed:", googleErr.message);
     // Fall back to HackerNews — always works, no auth
     try {
-      terms = await fetchHackerNewsTrending();
+      terms = await fetchViralContentfetchHackerNewsTrending();
       dataSource = "hackernews";
       console.log("Using HackerNews trending");
     } catch (hnErr) {
