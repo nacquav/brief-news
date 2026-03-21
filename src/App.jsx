@@ -681,7 +681,7 @@ function TrendCard({ trend, index }) {
               <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: "#00C4A8", letterSpacing: 1 }}>{trend.spike}% spike</span>
             </div>
             <span style={{ color: "rgba(0,0,0,0.15)", fontSize: 10 }}>·</span>
-            {trend.crossSources.map(s => (
+            {trend.crossSources.slice(0, 2).map(s => (
               <span key={s} style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, letterSpacing: 0.5, color: "#6B7280", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 4, padding: "2px 6px", whiteSpace: "nowrap" }}>{s}</span>
             ))}
           </div>

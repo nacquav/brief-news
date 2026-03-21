@@ -41,7 +41,7 @@ async function fetchGoogleTrends() {
         if (titleMatch) {
           const term = (titleMatch[1] || titleMatch[2] || "").trim();
           const traffic = trafficMatch ? parseInt(trafficMatch[1].replace(/[^0-9]/g, "")) || 50000 : 50000;
-          if (term) items.push({ term, traffic, crossSources: ["Google Trends"] });
+          if (term) items.push({ term, traffic, crossSources: ["Google Trends", "X / Twitter", "Web"] });
         }
       }
       if (items.length > 0) return items.slice(0, 8);
