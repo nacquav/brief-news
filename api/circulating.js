@@ -29,45 +29,26 @@ async function fetchGoogleTrends() {
   return items.slice(0, 8);
 }
 
-async function fetchRedditToken() {
-  const credentials = Buffer.from(
-    `${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`
-  ).toString("base64");
-  const res = await fetch("https://www.reddit.com/api/v1/access_token", {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "BriefApp/1.0",
-    },
-    body: "grant_type=client_credentials",
-  });
-  const data = await res.json();
-  if (!data.access_token) throw new Error("Reddit auth failed");
-  return data.access_token;
-}
+
 
 async function fetchRedditTrending() {
-  const token = await fetchRedditToken();
-  const res = await fetch("https://oauth.reddit.com/r/all/rising?limit=10", {
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "User-Agent": "BriefApp/1.0",
-    },
-  });
-  if (!res.ok) throw new Error(`Reddit status ${res.status}`);
-  const data = await res.json();
-  return data.data.children
-    .map(p => p.data)
-    .filter(p => p.title && p.ups > 100)
-    .map((p, i) => ({
-      term: p.title.slice(0, 80),
-      traffic: p.ups + p.num_comments * 10,
-      source: `r/${p.subreddit}`,
-      crossSources: ["Reddit", `r/${p.subreddit}`, "X / Twitter"],
-    }))
-    .slice(0, 8);
-}
+    const res = await fetch(
+      "https://www.reddit.com/r/all/rising.json?limit=15",
+      { headers: { "User-Agent": "BriefApp/1.0 (by /u/brief_app)" } }
+    );
+    if (!res.ok) throw new Error(`Reddit status ${res.status}`);
+    const data = await res.json();
+    return data.data.children
+      .map(p => p.data)
+      .filter(p => p.title && p.ups > 50 && !p.over_18)
+      .map(p => ({
+        term: p.title.length > 80 ? p.title.slice(0, 77) + "..." : p.title,
+        traffic: p.ups + p.num_comments * 10,
+        source: `r/${p.subreddit}`,
+        crossSources: ["Reddit", `r/${p.subreddit}`, "X / Twitter"],
+      }))
+      .slice(0, 8);
+  }
 
 async function generateBrief(term) {
   const message = await client.messages.create({
