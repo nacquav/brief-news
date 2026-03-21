@@ -622,7 +622,6 @@ function BottomSheet({ children, onClose }) {
 }
 
 
-
 // ── NEWS CARD ──
 function NewsCard({ item, color, label, category }) {
   const [summary, setSummary] = useState(null);
