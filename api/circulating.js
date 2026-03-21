@@ -5,61 +5,67 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const cache = { data: null, timestamp: 0 };
 const CACHE_TTL = 20 * 60 * 1000;
 
-async function fetchGoogleTrends() {
-  const res = await fetch(
-    "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US",
-    { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" } }
+async function fetchHackerNewsTrending() {
+  // Fetch top story IDs
+  const idsRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
+  const ids = await idsRes.json();
+
+  // Fetch top 12 stories in parallel
+  const stories = await Promise.all(
+    ids.slice(0, 12).map(id =>
+      fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
+        .then(r => r.json())
+        .catch(() => null)
+    )
   );
-  if (!res.ok) throw new Error(`Google Trends status ${res.status}`);
-  const xml = await res.text();
-  const items = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
-  let match;
-  while ((match = itemRegex.exec(xml)) !== null) {
-    const item = match[1];
-    const titleMatch = item.match(/<title><!\[CDATA\[([^\]]+)\]\]><\/title>|<title>([^<]+)<\/title>/);
-    const trafficMatch = item.match(/<ht:approx_traffic>([^<]+)<\/ht:approx_traffic>/);
-    if (titleMatch) {
-      const term = (titleMatch[1] || titleMatch[2] || "").trim();
-      const traffic = trafficMatch ? parseInt(trafficMatch[1].replace(/[^0-9]/g, "")) || 0 : 0;
-      if (term) items.push({ term, traffic, source: "Google Trends" });
-    }
-  }
-  if (items.length === 0) throw new Error("No trends parsed");
-  return items.slice(0, 8);
+
+  return stories
+    .filter(s => s && s.title && s.score > 50)
+    .map(s => ({
+      term: s.title.length > 80 ? s.title.slice(0, 77) + "..." : s.title,
+      traffic: s.score + (s.descendants || 0) * 5,
+      url: s.url || `https://news.ycombinator.com/item?id=${s.id}`,
+      comments: s.descendants || 0,
+      score: s.score,
+      crossSources: ["Hacker News", "X / Twitter", "Web"],
+    }))
+    .slice(0, 8);
 }
 
-
-
-async function fetchRedditTrending() {
-    const res = await fetch(
-      "https://www.reddit.com/r/all/rising.json?limit=15&raw_json=1",
-      {
+async function fetchGoogleTrends() {
+  // Try the new Google Trends URL format
+  const urls = [
+    "https://trends.google.com/trending/rss?geo=US",
+    "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US&hl=en-US",
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-          "Accept": "application/json, text/plain, */*",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Accept-Encoding": "gzip, deflate, br",
-          "Cache-Control": "no-cache",
-          "Pragma": "no-cache",
-          "Referer": "https://www.reddit.com/",
-          "Origin": "https://www.reddit.com",
+          "Accept": "application/rss+xml, application/xml, text/xml, */*",
+        }
+      });
+      if (!res.ok) continue;
+      const xml = await res.text();
+      const items = [];
+      const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+      let match;
+      while ((match = itemRegex.exec(xml)) !== null) {
+        const item = match[1];
+        const titleMatch = item.match(/<title><!\[CDATA\[([^\]]+)\]\]><\/title>|<title>([^<]+)<\/title>/);
+        const trafficMatch = item.match(/<ht:approx_traffic>([^<]+)<\/ht:approx_traffic>/);
+        if (titleMatch) {
+          const term = (titleMatch[1] || titleMatch[2] || "").trim();
+          const traffic = trafficMatch ? parseInt(trafficMatch[1].replace(/[^0-9]/g, "")) || 50000 : 50000;
+          if (term) items.push({ term, traffic, crossSources: ["Google Trends", "X / Twitter", "Web"] });
         }
       }
-    );
-    if (!res.ok) throw new Error(`Reddit status ${res.status}`);
-    const data = await res.json();
-    return data.data.children
-      .map(p => p.data)
-      .filter(p => p.title && p.ups > 50 && !p.over_18)
-      .map(p => ({
-        term: p.title.length > 80 ? p.title.slice(0, 77) + "..." : p.title,
-        traffic: p.ups + p.num_comments * 10,
-        source: `r/${p.subreddit}`,
-        crossSources: ["Reddit", `r/${p.subreddit}`, "X / Twitter"],
-      }))
-      .slice(0, 8);
+      if (items.length > 0) return items.slice(0, 8);
+    } catch { continue; }
   }
+  throw new Error("All Google Trends URLs failed");
+}
 
 async function generateBrief(term) {
   const message = await client.messages.create({
@@ -88,7 +94,7 @@ Write only the brief and the final word rating.`,
 }
 
 function randomTimeAgo() {
-  const mins = Math.floor(Math.random() * 180);
+  const mins = Math.floor(Math.random() * 180) + 10;
   if (mins < 60) return `${mins}m ago`;
   return `${Math.floor(mins / 60)}h ago`;
 }
@@ -101,7 +107,7 @@ export default async function handler(req, res) {
   }
 
   let terms = [];
-  let dataSource = "google";
+  let dataSource = "hackernews";
 
   // Try Google Trends first
   try {
@@ -109,14 +115,14 @@ export default async function handler(req, res) {
     dataSource = "google";
     console.log("Using Google Trends");
   } catch (googleErr) {
-    console.warn("Google Trends blocked, trying Reddit:", googleErr.message);
-    // Fall back to Reddit
+    console.warn("Google Trends failed:", googleErr.message);
+    // Fall back to HackerNews — always works, no auth
     try {
-      terms = await fetchRedditTrending();
-      dataSource = "reddit";
-      console.log("Using Reddit trending");
-    } catch (redditErr) {
-      console.error("Both sources failed:", redditErr.message);
+      terms = await fetchHackerNewsTrending();
+      dataSource = "hackernews";
+      console.log("Using HackerNews trending");
+    } catch (hnErr) {
+      console.error("All sources failed:", hnErr.message);
       return res.status(200).json({ trends: [], cached: false });
     }
   }
@@ -124,21 +130,20 @@ export default async function handler(req, res) {
   const maxTraffic = Math.max(...terms.map(t => t.traffic), 1);
 
   const trends = (await Promise.all(
-    terms.slice(0, 6).map(async ({ term, traffic, source, crossSources }, i) => {
+    terms.slice(0, 6).map(async ({ term, traffic, crossSources, score, comments }, i) => {
       try {
         const { brief, noiseRating } = await generateBrief(term);
+        const spike = Math.max(Math.round((traffic / maxTraffic) * 100), 20);
         return {
           id: i + 1,
           term,
-          spike: Math.max(Math.round((traffic / maxTraffic) * 100), 20),
+          spike,
           brief,
           noiseRating,
           timeAgo: randomTimeAgo(),
-          crossSources: crossSources || [
-            dataSource === "google" ? "Google Trends" : "Reddit",
-            "X / Twitter",
-            source || "Web",
-          ],
+          crossSources: crossSources || ["Hacker News", "X / Twitter", "Web"],
+          score: score || null,
+          comments: comments || null,
         };
       } catch { return null; }
     })
@@ -146,5 +151,5 @@ export default async function handler(req, res) {
 
   cache.data = trends;
   cache.timestamp = Date.now();
-  return res.status(200).json({ trends, cached: false });
+  return res.status(200).json({ trends, cached: false, source: dataSource });
 }
